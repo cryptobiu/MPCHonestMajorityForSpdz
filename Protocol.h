@@ -77,7 +77,7 @@ public:
      * 2. Generating 2*numOfOpens beaver triples using the semi-honest multiplication method.
      * 3. Verifying numOfOpens triples using the other numOfOpens triples created in the second step.
      */
-    bool init();
+    bool offline();
 
 
     /**
@@ -232,7 +232,7 @@ private :
      * We use this algorithm, but extend it to capture an arbitrary number of double-sharings.
      * This is, as usual, achieved by processing multiple buckets in parallel.
      */
-    bool offline();
+    //bool offline();
 
     /**
      * The aim of this protocol is to produce random triples that will be later used in the main protocol.
@@ -1091,14 +1091,10 @@ void Protocol<FieldType>::initFirstRowInvVDM(){
 
 
 template <class FieldType>
-bool Protocol<FieldType>::init()
-{
-    return offline();
-}
-
-template <class FieldType>
 bool Protocol<FieldType>::offline()
 {
+
+    trippleIndex = 0;
 
     //generate triples for the DN multiplication protocol
     if(multType=="DN") {
@@ -1176,9 +1172,12 @@ bool Protocol<FieldType>::triples(int numOfTriples, vector<FieldType> &triples){
 
     for(int i=0; i<numOfTriples; i++){
 
-        triples[3*i] = randomABShares[i];//set a
-        triples[3*i+1] = randomABShares[i+2*numOfOpens];//set b
-        triples[3*i+2] = c[i];//set c
+        triples[3*i] = randomABShares[trippleIndex];//set a
+        triples[3*i+1] = randomABShares[trippleIndex +2*numOfOpens];//set b
+        triples[3*i+2] = c[trippleIndex];//set c
+
+        trippleIndex++;
+
     }
 
     return true;

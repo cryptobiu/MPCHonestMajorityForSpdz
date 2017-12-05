@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
         vector<ZpMersenneLongElement> shareArr;
         shareArr.resize(333);
         protocol.input(0,shareArr);
-        protocol.init();
+        protocol.offline();
     }
     auto t2 = high_resolution_clock::now();
 
