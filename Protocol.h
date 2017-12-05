@@ -433,7 +433,7 @@ bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
 
 
     cout<< "before input: "<<endl;
-    cout<< "shareArray size is: "<<shareArr.size();
+    cout<< "shareArray size is: "<<shareArr.size()<<endl;
 
     if (partyID == m_partyId) {
         readMyInputs(shareArr.size());
@@ -1110,14 +1110,14 @@ bool Protocol<FieldType>::offline()
     }
 
 
-    cout<<"before offline";
+    cout<<"before offline"<<endl;
     honestMult->invokeOffline();//need to pust some
 
-    cout<<"after offline";
+    cout<<"after offline"<<endl;
 
     generateBeaverTriples(numOfOpens*2);
 
-    cout<<"after generating triples";
+    cout<<"after generating triples"<<endl;
 
     return verifyTriples();
 
