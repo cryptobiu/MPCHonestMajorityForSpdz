@@ -1,0 +1,10 @@
+.idea/
+*~
+CMakeFiles/
+callgrind*
+CMakeCache.txt
+cmake_install.cmake
+cmake-build-debug/
+Makefile
+MPCHonestMajorityForSpdz
+MPCHonestMajorityForSpdz.cbp
