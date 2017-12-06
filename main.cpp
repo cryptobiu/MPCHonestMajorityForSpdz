@@ -66,8 +66,17 @@ int main(int argc, char* argv[])
     for(int i=0; i<times; i++) {
         vector<ZpMersenneLongElement> shareArr;
         shareArr.resize(333);
-        protocol.input(0,shareArr);
-        protocol.offline();
+        bool flag = protocol.input(0,shareArr);
+
+        cout<<"---------input flag is-----------" << flag<<endl;
+        flag = protocol.offline();
+
+        cout<<"---------offline flag is-----------" << flag<<endl;
+
+        vector<ZpMersenneLongElement> triples(6);
+        flag = protocol.triples(2, triples);
+
+        cout<<"---------triples flag is-----------" << flag<<endl;
     }
     auto t2 = high_resolution_clock::now();
 

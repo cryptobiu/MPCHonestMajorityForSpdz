@@ -1277,17 +1277,22 @@ FieldType Protocol<FieldType>::interpolate(vector<FieldType> x)
 template <class FieldType>
 FieldType Protocol<FieldType>::reconstructShare(vector<FieldType>& x, int d, bool &flag){
 
+
+
     flag = true;
+
     if (!checkConsistency(x, d))
     {
         // someone cheated!
 
-            cerr << "cheating!!! checkConsistency fained in reconstruct function" << endl;
+        cerr << "cheating!!! checkConsistency fained in reconstruct function" << endl;
         flag = false;
+
         return FieldType();
     }
-    else
+    else {
         return interpolate(x);
+    }
 }
 
 
@@ -1623,9 +1628,11 @@ bool Protocol<FieldType>::verifyTriples() {
         generatePseudoRandomElements(key, betaElements, numOfRandomelements*2);
 
 
-            flag = verificationOfSingleTriples(randomABShares.data(), randomABShares.data() + 2*numOfOpens , c.data(),
-                                        randomABShares.data() + numOfOpens, randomABShares.data() + 3*numOfOpens,c.data() + numOfOpens,
-                                        betaElements.data(), numOfOpens);
+
+        flag = verificationOfSingleTriples(randomABShares.data(), randomABShares.data() + 2*numOfOpens , c.data(),
+                                    randomABShares.data() + numOfOpens, randomABShares.data() + 3*numOfOpens,c.data() + numOfOpens,
+                                    betaElements.data(), numOfOpens);
+
 
 //    }
 
@@ -1718,10 +1725,9 @@ bool Protocol<FieldType>::verifyTriples() {
               x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldByteSize));
           }
 
-
           secrets[k] = reconstructShare(x1, T, flag);
 
-          if(flag==false);
+          if(flag==false)
             return false;
 
       }
@@ -1859,8 +1865,7 @@ bool Protocol<FieldType>::verificationOfSingleTriples(FieldType *x, FieldType *y
         roAndSigma[2*k + 1] = y[k] + b[k];//sigma
     }
 
-
-    //open all the shares at once
+     //open all the shares at once
     flag = openShare(numOfTriples*2, roAndSigma, secretArr);
 
     if(flag==false)
@@ -1889,7 +1894,7 @@ bool Protocol<FieldType>::verificationOfSingleTriples(FieldType *x, FieldType *y
     //check that V=0
     if(secretArrV[0] != *field->GetZero()) {
 
-        cerr<<"verification failed"<<endl;
+        cout<<"-------verification failed-----------"<<endl;
         return false;
     }
 
