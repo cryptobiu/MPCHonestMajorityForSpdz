@@ -52,7 +52,7 @@ public:
      * @param genRandomSharesType the name of the procedure to generate random shares. Possible values are "HIM"/"PRSS".
      * @param multType the semi honest multiplication method. Possible values are "DN"/"GRR"
      */
-    Protocol(int n, int id, int numOfOpens,TemplateField<FieldType> *field, string inputsFile = "inputsFile.txt",
+    Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile = "inputsFile.txt",
              string genRandomSharesType = "HIM", string multType = "DN");
 
 
@@ -88,7 +88,25 @@ public:
      * @param secrets an output vector to fill with the opened shares, that is, the true values of the related shamir shares
      * from all the parties
      */
-    bool openShare(int numOfRandomShares, vector<FieldType> &Shares, vector<FieldType> &secrets);
+    bool openShare(int numOfRandomShares, vector<FieldType> &shares, vector<FieldType> &secrets);
+
+
+    /**
+     * Curently this function does two things:
+     * 1. mults every item in the x array by every corresponding item in the y array and returns the result
+     *    as the xy shares
+     * 2. verifies that the resulting multiplication to detect cheats.
+     *
+     * NOTE: The second part should be removed later on. The verification should be done for all the multiplication
+     *       at once.
+     *
+     * @param numOfpairs the number of x,y pairs to mult
+     * @param xShares an array of all the x's to mult
+     * @param yShares an array of all the y's to mult
+     * @param outputXYShares the output array containing the shares with the resulting xy shares
+     * @return
+     */
+    bool multShares(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares);
 
     /**
      * This function currently does nothing, since the verification is embedded in the open procedure.
@@ -118,6 +136,7 @@ private:
     vector<shared_ptr<ProtocolPartyData>>  parties;
     vector<FieldType> randomTAnd2TShares;
     int numOfOpens;
+    int numOfMults;
 
 
     string genRandomSharesType, multType/*, verifyType*/;
@@ -140,7 +159,12 @@ private:
     vector<FieldType> randomABShares;//a, b random shares
     vector<FieldType> c;//a vector of a*b shares
 
-     boost::asio::io_service io_service;
+    vector<FieldType> randomABSharesForMult;//a, b random shares
+    vector<FieldType> cForMult;//a vector of a*b shares
+    int multIndex;
+
+
+    boost::asio::io_service io_service;
     vector<FieldType> alpha; // N distinct non-zero field elements
 
     vector<FieldType> sharingBufTElements; // prepared T-sharings (my shares)
@@ -240,7 +264,7 @@ private :
      * 1. The parties call a protocol to generate random shares to obtain 2L random
      * 2. The parties run a semi-honest multiplication sub protocol to obtain a sharing of a*b
      */
-    void generateBeaverTriples(int numOfTriples);
+    void generateBeaverTriples(int numOfTriples, vector<FieldType> &aBShares, vector<FieldType> &cToFill);
 
     /**
      * This protocol is secure only in the presence of a semi-honest adversary.
@@ -295,6 +319,7 @@ private :
 //    void verificationPhase();
 
     bool verifyTriples();
+    bool verifyMults(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares);
 
 
     vector<byte> generateCommonKey();
@@ -318,7 +343,7 @@ private :
 
 
 template <class FieldType>
-Protocol<FieldType>::Protocol(int n, int id, int numOfOpens,TemplateField<FieldType> *field, string inputsFile,
+Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile,
                               string genRandomSharesType , string multType)
 {
 
@@ -326,6 +351,7 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens,TemplateField<FieldT
     this->multType = multType;
     //this->verifyType = verifyType;
     this->numOfOpens = numOfOpens;
+    this->numOfMults = numOfMults;
 
     if(multType=="GRR"){
         honestMult = new GRRHonestMult<FieldType>(this);
@@ -353,6 +379,7 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens,TemplateField<FieldT
     m_partyId = id;
     s = to_string(m_partyId);
     trippleIndex = 0;
+    multIndex = 0;
     counter = 0;
 
     MPCCommunication comm;
@@ -1100,7 +1127,7 @@ bool Protocol<FieldType>::offline()
     if(multType=="DN") {
 
         //if(verifyType=="Single")
-            offlineDNForMultiplication(2 * numOfOpens);
+            offlineDNForMultiplication(2 * numOfOpens + numOfMults);
 //        else if(verifyType=="Batch") {
 //
 //            int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
@@ -1115,32 +1142,39 @@ bool Protocol<FieldType>::offline()
 
     cout<<"after offline"<<endl;
 
-    generateBeaverTriples(numOfOpens*2);
+
+    //generate verified triples for the "open" instruction of SPDZ
+    generateBeaverTriples(numOfOpens*2, randomABShares,c);
 
     cout<<"after generating triples"<<endl;
 
-    return verifyTriples();
+    bool flag = verifyTriples();
+
+    //generate un-verified triples for the multiplication instruction
+    generateBeaverTriples(numOfMults, randomABSharesForMult,cForMult);
+
+    return flag;
 
 
 
 }
 
 template <class FieldType>
-void Protocol<FieldType>::generateBeaverTriples(int numOfTriples){
+void Protocol<FieldType>::generateBeaverTriples(int numOfTriples, vector<FieldType> &aBShares, vector<FieldType> &cToFill){
 
     //int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
 
-    randomABShares.resize(numOfTriples*2);//a, b random shares
-    c.resize(numOfTriples);//a vector of a*b shares
+    aBShares.resize(numOfTriples*2);//a, b random shares
+    cToFill.resize(numOfTriples);//a vector of a*b shares
 
 
     auto t1 = high_resolution_clock::now();
 
     //first generate 2*numOfTriples random shares
     if(genRandomSharesType=="HIM")
-        generateRandomShares(numOfTriples*2 ,randomABShares);
+        generateRandomShares(numOfTriples*2 ,aBShares);
     else if(genRandomSharesType=="PRSS")
-        generateRandomSharesPRSS(numOfTriples*2,randomABShares);
+        generateRandomSharesPRSS(numOfTriples*2,aBShares);
 
 
     auto t2 = high_resolution_clock::now();
@@ -1151,7 +1185,7 @@ void Protocol<FieldType>::generateBeaverTriples(int numOfTriples){
     }
 
     t1 = high_resolution_clock::now();
-    honestMult->mult(randomABShares.data(), randomABShares.data()+numOfTriples, c, numOfTriples);
+    honestMult->mult(aBShares.data(), aBShares.data()+numOfTriples, cToFill, numOfTriples);
 
     t2 = high_resolution_clock::now();
 
@@ -1645,6 +1679,46 @@ bool Protocol<FieldType>::verifyTriples() {
 }
 
 
+template <class FieldType>
+bool Protocol<FieldType>::verifyMults(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares) {
+
+
+    //int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();//calc the number of times we need to run the verification -- ceiling
+
+
+    int numOfRandomelements = numOfpairs;//the number of random elements to create
+
+
+    //first generate the common aes key
+    auto key = generateCommonKey();
+
+    bool flag;
+
+    vector<FieldType> betaElements(numOfRandomelements*2);
+    generatePseudoRandomElements(key, betaElements, numOfRandomelements*2);
+
+
+
+    flag = verificationOfSingleTriples(xShares.data(), yShares.data(), outputXYShares.data(),
+                                       randomABSharesForMult.data()+multIndex,
+                                       randomABSharesForMult.data() + numOfMults + multIndex,
+                                       cForMult.data()+multIndex,
+                                       betaElements.data(), numOfpairs);
+
+
+
+
+    if (flag_print) {
+        cout << "answer is:" << flag << endl;
+    }
+
+    multIndex +=numOfpairs;
+    return flag;
+
+}
+
+
+
   template <class FieldType>
   vector<byte> Protocol<FieldType>::generateCommonKey(){
 
@@ -1736,6 +1810,23 @@ bool Protocol<FieldType>::verifyTriples() {
 
   }
 
+template <class FieldType>
+bool Protocol<FieldType>::multShares(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares){
+
+
+    //check that the arrays are in the right size
+    if(xShares.size()!=numOfpairs || yShares.size()!=numOfpairs || outputXYShares.size()!=numOfpairs){
+        return false;
+    }
+    //call the multiplication protocol
+
+    //mult x shares by y shares
+    honestMult->mult(xShares.data(), yShares.data(), outputXYShares, numOfpairs);
+
+    //verify the shares
+    return verifyMults(numOfpairs, xShares, yShares, outputXYShares);
+
+}
 
 template <class FieldType>
 void Protocol<FieldType>::generatePseudoRandomElements(vector<byte> & aesKey, vector<FieldType> &randomElementsToFill, int numOfRandomElements){

@@ -43,7 +43,7 @@
 int main(int argc, char* argv[])
 {
 
-    if(argc != 3)
+    if(argc != 4)
     {
         cout << "wrong number of arguments";
         return 0;
@@ -60,24 +60,211 @@ int main(int argc, char* argv[])
 
     TemplateField<ZpMersenneLongElement> *field = new TemplateField<ZpMersenneLongElement>(0);
 
-    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), field);
+    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), field);
 
     auto t1 = high_resolution_clock::now();
     for(int i=0; i<times; i++) {
         vector<ZpMersenneLongElement> shareArr;
-        shareArr.resize(333);
+        vector<ZpMersenneLongElement> shareArr1;
+        shareArr.resize(10);
         bool flag = protocol.input(0,shareArr);
+         flag = protocol.input(1,shareArr1);
 
         cout<<"---------input flag is-----------" << flag<<endl;
         flag = protocol.offline();
 
         cout<<"---------offline flag is-----------" << flag<<endl;
 
-        vector<ZpMersenneLongElement> triples(6);
-        flag = protocol.triples(2, triples);
+//        vector<ZpMersenneLongElement> triples(3);
+//        flag = protocol.triples(1, triples);
+//
+//        vector<ZpMersenneLongElement> secrets(2);
+//
+//
+//        flag = protocol.openShare(2, shareArr, secrets);
+//
+//        cout<<" x = " <<secrets[0]<< " y = "<< secrets[1] << " xy = " <<secrets[0] * secrets[1]<<endl;
+//
+//
+//        secrets.resize(3);
+//        flag = protocol.openShare(3, triples, secrets);
+//
+//        auto shareA = triples[0];
+//        auto shareB = triples[1];
+//        auto shareC = triples[2];
+//
+//
+//
+//        cout<<"a = " <<secrets[0]<< " b = "<< secrets[1] << " c = " <<secrets[2]<<endl;
+//        cout<<"a*b = "<< secrets[0] * secrets[1]<<endl;
+//
+//
+//
+//
+//        vector<ZpMersenneLongElement> sharesToOpen(2);
+//        sharesToOpen[0] = shareArr[0] - shareA; //[x-a]
+//        sharesToOpen[1] = shareArr[1] - shareB;//[y-b]
+//
+//
+//
+//        flag = protocol.openShare(2, sharesToOpen, secrets);
+//
+//        auto xMinusA = secrets[0];
+//        auto yMinusB = secrets[0];
+//
+//        //cout<<"---------secrets----------- x-a = " <<xMinusA<< " y-b = "<< yMinusB <<endl;
+//
+//
+//
+//        //[z] = (x − a) · [b]            + (y − b) · [a]           + (x − a) · (y − b)       + [c]  = [x · y]
+//
+//        auto z = secrets[0] * triples[1] + secrets[1] * triples[0] + secrets[0] * secrets[1] + triples[2];
+//
+//        sharesToOpen[0] = z;
+//
+//        flag = protocol.openShare(1, sharesToOpen, secrets);
+//
+//        cout<<"using beaver -- x*y = " <<secrets[0]<<endl;
+//
+//
+//
+//        //generate one mult of inputs 3 and 4
+//        vector<ZpMersenneLongElement> shareOfXArr(1);
+//        vector<ZpMersenneLongElement> shareOfYArr(1);
+//        vector<ZpMersenneLongElement> shareOfXYArr(1);
+//        vector<ZpMersenneLongElement> secretOfXYArr(1);
+//        vector<ZpMersenneLongElement> inputSecrets(10);
+//
+//        shareOfXArr[0] = shareArr[2];
+//        shareOfYArr[0] = shareArr[3];
+//
+//        //mult the two shares
+//        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
+//
+//        cout<<"---------mult flag is-----------" << flag<<endl;
+//
+//        flag = protocol.openShare(10, shareArr, inputSecrets);
+//
+//        cout<<"x = " <<inputSecrets[2]<<"y = " <<inputSecrets[3]<<endl;
+//
+//        flag = protocol.openShare(1, shareOfXYArr, secretOfXYArr);
+//
+//        cout<<"internal mult -- x*y = " <<secretOfXYArr[0]<<endl;
+//
+//
+//        shareOfXArr[0] = shareArr[4];
+//        shareOfYArr[0] = shareArr[5];
+//
+//        //mult the two shares
+//        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
+//
+//        cout<<"---------mult flag is-----------" << flag<<endl;
+//
+//        cout<<"x2 = " <<inputSecrets[4]<<"y2 = " <<inputSecrets[5]<<endl;
+//
+//        flag = protocol.openShare(1, shareOfXYArr, secretOfXYArr);
+//
+//        cout<<"internal mult -- x2*y2 = " <<secretOfXYArr[0]<<endl;
 
-        cout<<"---------triples flag is-----------" << flag<<endl;
+
+//        ZpMersenneLongElement xy(0);
+//        //testing SPDZ values
+//        if(atoi(argv[1])==0)
+//            xy = ZpMersenneLongElement(383703700421887765);
+//        else if (atoi(argv[1])==1)
+//            xy = ZpMersenneLongElement(940093797204495032);
+//        else if(atoi(argv[1])==2)
+//            xy = ZpMersenneLongElement(1323797497626382785);
+//
+//        shareOfXYArr[0] = xy;
+//        flag = protocol.openShare(1, shareOfXYArr, secretOfXYArr);
+//
+//        cout<<"spdz -- xy = " <<secretOfXYArr[0]<<endl;
+
+
+
+        //spdz test for values
+
+        vector<ZpMersenneLongElement> SPDZtriples(3);
+        vector<ZpMersenneLongElement> SPDZshares(2);
+
+        if(atoi(argv[1])==0) {
+            //share a = 869738961550008488; share b = 983104380898725265; share c = 39913426787389368
+            SPDZtriples[0] =869738961550008488;
+            SPDZtriples[1] =983104380898725265;
+            SPDZtriples[2] =39913426787389368;
+
+            //input value 160727542214262586
+            SPDZshares[0] = 160727542214262586;
+            //input value 368007752470225898
+            SPDZshares[1] = 368007752470225898;
+
+        }
+        else if(atoi(argv[1])==1) {
+            //share a = 767820936118086415; share b = 1556751900158381769; share c = 2055043744731651588;
+            SPDZtriples[0] =767820936118086415;
+            SPDZtriples[1] =1556751900158381769;
+            SPDZtriples[2] =2055043744731651588;
+
+            //input value 321455084428525169
+            SPDZshares[0] = 321455084428525169;
+            //input value 736015504940451792
+            SPDZshares[1] = 736015504940451792;
+        }
+        else if(atoi(argv[1])==2) {
+            //share a = 665902910686164342; share b = 2130399419418038273; share c = 1764331053462219857;
+            SPDZtriples[0] =665902910686164342;
+            SPDZtriples[1] =2130399419418038273;
+            SPDZtriples[2] =1764331053462219857;
+
+            //input value 482182626642787752
+            SPDZshares[0] = 482182626642787752;
+            //input value 1104023257410677686
+            SPDZshares[1] = 1104023257410677686;
+
+        }
+
+
+        vector<ZpMersenneLongElement>sharesToOpen(2);
+        vector<ZpMersenneLongElement>secrets(2);
+
+        sharesToOpen[0] = SPDZshares[0] - SPDZtriples[0]; //[x-a]
+        sharesToOpen[1] = SPDZshares[1] - SPDZtriples[1];//[y-b]
+
+
+
+        flag = protocol.openShare(2, sharesToOpen, secrets);
+
+        auto xMinusA = secrets[0];
+        auto yMinusB = secrets[1];
+
+        cout<<"x-a  = " <<secrets[0]<<"y-b  = " <<secrets[1]<<endl;
+
+
+
+
+        //cout<<"---------secrets----------- x-a = " <<xMinusA<< " y-b = "<< yMinusB <<endl;
+
+
+
+        //[z] = (x − a) · [b]            + (y − b) · [a]           + (x − a) · (y − b)       + [c]  = [x · y]
+
+        auto SPDZz = secrets[0] * SPDZtriples[1] + secrets[1] * SPDZtriples[0] + secrets[0] * secrets[1] + SPDZtriples[2];
+
+        cout<<"spdz -- [z] = " <<SPDZz<<endl;
+
+
+        sharesToOpen[0] = SPDZz;
+
+        flag = protocol.openShare(1, sharesToOpen, secrets);
+
+        cout<<"spdz -- xy = " <<secrets[0]<<endl;
     }
+
+
+
+
+
     auto t2 = high_resolution_clock::now();
 
     auto duration = duration_cast<milliseconds>(t2-t1).count();
