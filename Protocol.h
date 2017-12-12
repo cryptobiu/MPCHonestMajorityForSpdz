@@ -110,9 +110,9 @@ public:
     bool multShares(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares);
 
 
-    bool addShareAndScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare + scalar; return true;};
-    bool shareSubScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare - scalar; return true;};
-    bool scalarSubShare(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = scalar - xShare; return true;};
+    static bool addShareAndScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare + scalar; return true;};
+    static bool shareSubScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare - scalar; return true;};
+    static bool scalarSubShare(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = scalar - xShare; return true;};
 
 
 
