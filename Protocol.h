@@ -91,6 +91,7 @@ public:
     bool openShare(int numOfRandomShares, vector<FieldType> &shares, vector<FieldType> &secrets);
 
 
+
     /**
      * Curently this function does two things:
      * 1. mults every item in the x array by every corresponding item in the y array and returns the result
@@ -107,6 +108,13 @@ public:
      * @return
      */
     bool multShares(int numOfpairs, vector<FieldType> &xShares, vector<FieldType> &yShares, vector<FieldType> &outputXYShares);
+
+
+    bool addShareAndScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare + scalar; return true;};
+    bool shareSubScalar(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = xShare - scalar; return true;};
+    bool scalarSubShare(FieldType &xShare, FieldType &scalar, FieldType &outputShare){ outputShare = scalar - xShare; return true;};
+
+
 
     /**
      * This function currently does nothing, since the verification is embedded in the open procedure.
@@ -1827,6 +1835,7 @@ bool Protocol<FieldType>::multShares(int numOfpairs, vector<FieldType> &xShares,
     return verifyMults(numOfpairs, xShares, yShares, outputXYShares);
 
 }
+
 
 template <class FieldType>
 void Protocol<FieldType>::generatePseudoRandomElements(vector<byte> & aesKey, vector<FieldType> &randomElementsToFill, int numOfRandomElements){
