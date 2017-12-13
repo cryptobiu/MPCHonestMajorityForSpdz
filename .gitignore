@@ -8,3 +8,4 @@ cmake-build-debug/
 Makefile
 MPCHonestMajorityForSpdz
 MPCHonestMajorityForSpdz.cbp
+libMPCHonestMajorityForSpdz.a
