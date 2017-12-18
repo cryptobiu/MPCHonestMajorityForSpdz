@@ -52,7 +52,8 @@ public:
      * @param genRandomSharesType the name of the procedure to generate random shares. Possible values are "HIM"/"PRSS".
      * @param multType the semi honest multiplication method. Possible values are "DN"/"GRR"
      */
-    Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile = "inputsFile.txt",
+    Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field,
+    		 string inputsFile = "inputsFile.txt", string commFile = "Parties.txt",
              string genRandomSharesType = "HIM", string multType = "DN");
 
 
@@ -122,6 +123,15 @@ public:
     bool verify();
 
     bool triples(int numOfTriples, vector<FieldType> &triples);
+
+    /**
+     * Load the reference shares with input values from the reference integers.
+     *
+     * @param partyID the party that simulates the input provision
+     * @param shareArr an output array to fill with the shares of the inputs
+     * @param valueArr the immediate values to be used as inputs
+     */
+    bool load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<u_int64_t> &valueArr);
 
 
     /**
@@ -351,7 +361,7 @@ private :
 
 
 template <class FieldType>
-Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile,
+Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile, string commFile,
                               string genRandomSharesType , string multType)
 {
 
@@ -392,7 +402,7 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, Tem
 
     MPCCommunication comm;
 
-    parties = comm.setCommunication(io_service, m_partyId, N, "Parties.txt", 0);
+    parties = comm.setCommunication(io_service, m_partyId, N, commFile.c_str(), 0);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
@@ -549,7 +559,91 @@ bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
     return inputVer(shareArr);
 }
 
+template <class FieldType>
+bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<u_int64_t> &valueArr)
+{
+    // the number of random double sharings we need altogether
+    vector<FieldType> x1(N),y1(N);
+    vector<vector<FieldType> > sendBufsElements(N);
+    vector<vector<byte> > sendBufsBytes(N);
+    vector<vector<byte> > recBufBytes(N);
+    vector<vector<FieldType> > recBufElements(N);
 
+    //int index = 0;
+    vector<int> sizes(N);
+
+    // prepare the shares for the input
+    for (int k = 0; k < shareArr.size(); k++)
+    {
+        sizes[partyID]++;
+
+        if (partyID == m_partyId) {
+
+            auto input = valueArr[k];
+            //index++;
+
+            // the value of a_0 is the input of the party.
+            x1[0] = field->GetElement(input);
+
+
+            // generate random degree-T polynomial
+            for(int i = 1; i < T+1; i++)
+            {
+                // A random field element, uniform distribution
+                x1[i] = field->Random();
+
+            }
+
+
+            matrix_vand.MatrixMult(x1, y1, T+1); // eval poly at alpha-positions predefined to be alpha_i = i
+
+            // prepare shares to be sent
+            for(int i=0; i < N; i++)
+            {
+                //cout << "y1[ " <<i<< "]" <<y1[i] << endl;
+                sendBufsElements[i].push_back(y1[i]);
+
+            }
+        }
+
+    }
+
+    int fieldByteSize = field->getElementSizeInBytes();
+    for(int i=0; i < N; i++)
+    {
+        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
+        //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
+        recBufBytes[i].resize(sizes[i]*fieldByteSize);
+        for(int j=0; j<sendBufsElements[i].size();j++) {
+            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+        }
+    }
+
+
+    roundFunctionSync(sendBufsBytes, recBufBytes,10);
+
+
+    //turn the bytes to elements
+    for(int i=0; i < N; i++)
+    {
+        recBufElements[i].resize((recBufBytes[i].size()) / fieldByteSize);
+        for(int j=0; j<recBufElements[i].size();j++) {
+            recBufElements[i][j] = field->bytesToElement(recBufBytes[i].data() + ( j * fieldByteSize));
+        }
+    }
+
+    for (int k = 0; k < shareArr.size(); k++)
+    {
+
+            auto share = recBufElements[partyID][k];
+
+            shareArr[k] = share; // set the share sent from the party owning the input
+
+
+    }
+
+    return inputVer(shareArr);
+}
 
 
 template <class FieldType>
