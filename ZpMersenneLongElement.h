@@ -36,7 +36,11 @@ public:
     ZpMersenneLongElement& operator*=(const ZpMersenneLongElement& f2);
 
 
-
+    friend std::istream& operator >> (std::istream& s, ZpMersenneLongElement & mle)
+    {
+    	s >> mle.elem;
+    	return s;
+    }
 
 
 

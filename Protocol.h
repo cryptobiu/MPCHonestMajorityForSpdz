@@ -131,7 +131,7 @@ public:
      * @param shareArr an output array to fill with the shares of the inputs
      * @param valueArr the immediate values to be used as inputs
      */
-    bool load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<u_int64_t> &valueArr);
+    bool load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<std::string> &valueStrArr);
 
 
     /**
@@ -560,7 +560,7 @@ bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
 }
 
 template <class FieldType>
-bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<u_int64_t> &valueArr)
+bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<std::string> &valueStrArr)
 {
     // the number of random double sharings we need altogether
     vector<FieldType> x1(N),y1(N);
@@ -579,11 +579,7 @@ bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &
 
         if (partyID == m_partyId) {
 
-            auto input = valueArr[k];
-            //index++;
-
-            // the value of a_0 is the input of the party.
-            x1[0] = field->GetElement(input);
+            x1[0] = field->stringToElement(valueStrArr[k]);
 
 
             // generate random degree-T polynomial
