@@ -25,7 +25,6 @@
 #define flag_print_timings true
 #define flag_print_output true
 
-#define MAX_PRSS_PARTIES 16
 
 
 using namespace std;
@@ -49,12 +48,10 @@ public:
      * @param numOfOpens the number of opens needed to execute the SPDZ program.
      * @param field the related field, currently restriced to mersenne 61.
      * @param inputsFile the input file name
-     * @param genRandomSharesType the name of the procedure to generate random shares. Possible values are "HIM"/"PRSS".
      * @param multType the semi honest multiplication method. Possible values are "DN"/"GRR"
      */
     Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field,
-    		 string inputsFile = "inputsFile.txt", string commFile = "Parties.txt",
-             string genRandomSharesType = "HIM", string multType = "DN");
+    		 string inputsFile = "inputsFile.txt", string commFile = "Parties.txt", string multType = "DN");
 
 
     /**
@@ -68,7 +65,7 @@ public:
      * @param partyID the party that holds the inputs
      * @param shareArr an output array to fill with the shares of the inputs
      */
-    bool input(int partyID, vector<FieldType> &shareArr);
+    bool makeShare(int partyID, vector<FieldType> &valuesArr, vector<FieldType> &shareArr);
 
 
     /**
@@ -211,13 +208,7 @@ private :
 
 
 
-    void printSubSet( bitset<MAX_PRSS_PARTIES> &l);
-    void subset(int size, int left, int index, bitset<MAX_PRSS_PARTIES> &l);
-    vector<bitset<MAX_PRSS_PARTIES>> allSubsets;
     vector<int> firstIndex;
-    vector<__m128i> prssKeys;
-    vector<PrgFromOpenSSLAES> prssPrgs;
-    vector<FieldType> prssSubsetElement;
     int counter = 0;
 
 
@@ -305,8 +296,6 @@ private :
     bool inputVer(vector<FieldType> &shareArr);
 
     void generateRandomShares(int numOfRnadoms, vector<FieldType>& randomElementsToFill);
-    void setupPRSS();
-    void generateRandomSharesPRSS(int numOfRnadoms, vector<FieldType>& randomElementsToFill);
     void generateRandom2TAndTShares(int numOfRandomPairs, vector<FieldType>& randomElementsToFill);
 
 
@@ -352,8 +341,6 @@ private :
                                      FieldType *randomElements, int numOfTriples);
 
 
-    void generateKeysForPRSS();
-
     friend class DNHonestMult<FieldType>;
     friend class GRRHonestMult<FieldType>;
 
@@ -362,10 +349,10 @@ private :
 
 template <class FieldType>
 Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile, string commFile,
-                              string genRandomSharesType , string multType)
+                              string multType)
 {
 
-    this->genRandomSharesType = genRandomSharesType;
+
     this->multType = multType;
     //this->verifyType = verifyType;
     this->numOfOpens = numOfOpens;
@@ -464,7 +451,7 @@ void Protocol<FieldType>::readMyInputs(int numOfInputs)
  * @param diff
  */
 template <class FieldType>
-bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
+bool Protocol<FieldType>::makeShare(int partyID, vector<FieldType> &valueArr, vector<FieldType> &shareArr)
 {
     // the number of random double sharings we need altogether
     vector<FieldType> x1(N),y1(N);
@@ -480,9 +467,6 @@ bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
     cout<< "before input: "<<endl;
     cout<< "shareArray size is: "<<shareArr.size()<<endl;
 
-    if (partyID == m_partyId) {
-        readMyInputs(shareArr.size());
-    }
 
     // prepare the shares for the input
     for (int k = 0; k < shareArr.size(); k++)
@@ -491,13 +475,9 @@ bool Protocol<FieldType>::input(int partyID, vector<FieldType> &shareArr)
 
         if (partyID == m_partyId) {
 
-            auto input = myInputs[k];
             index++;
-            if (flag_print) {
-                cout << "input  " << input << endl;
-            }
             // the value of a_0 is the input of the party.
-            x1[0] = field->GetElement(input);
+            x1[0] = valueArr[k];
 
 
             // generate random degree-T polynomial
@@ -666,10 +646,7 @@ bool Protocol<FieldType>::inputVer(vector<FieldType> &shareArr){
     vector<FieldType> v(1);
     vector<FieldType> secret(1);
 
-    if (genRandomSharesType == "HIM")
-        generateRandomShares(1, r);
-    else if (genRandomSharesType == "PRSS")
-        generateRandomSharesPRSS(1, r);
+    generateRandomShares(1, r);
 
 
     for (int i = 0; i < shareArr.size(); i++)
@@ -683,183 +660,6 @@ bool Protocol<FieldType>::inputVer(vector<FieldType> &shareArr){
 
 }
 
-template <class FieldType>
-void Protocol<FieldType>::setupPRSS() {
-
-    if (flag_print) {
-        cout << "in PRSS setup" << endl;
-    }
-    //generate all subsets that include my party id
-    bitset<MAX_PRSS_PARTIES> lt;
-    firstIndex.push_back(0);
-    subset(N,N-T,0,lt);
-
-    //generate the relevant keys for each subset
-    generateKeysForPRSS();
-
-
-    //generate the relevant number for each subset
-    prssSubsetElement.resize(allSubsets.size());
-    for(int i=0; i<allSubsets.size(); i++){
-
-
-        auto currSubset = allSubsets[i];
-        prssSubsetElement[i] = *field->GetOne();
-        for(int j=0; j<N; j++){
-
-
-            if(currSubset[j]==false){
-
-                //calc the relevant multiplication for this subset.
-                //the element calculated is: For each party P_a in currSubset calc *=(a-k)/-z where k is not in currSubset
-                prssSubsetElement[i] *= (field->GetElement(m_partyId ) - field->GetElement(j+1) ) /
-                        (*field->GetZero() - field->GetElement(j+1));
-            }
-
-
-        }
-        //cout<< " prssSubsetElement" <<"["<<i<<"] = " << prssSubsetElement[i]<< " for party " <<m_partyId<< endl;
-    }
-
-}
-template <class FieldType>
-void Protocol<FieldType>::generateKeysForPRSS() {
-
-    vector<vector<byte>> sendBufsBytes(N);
-    vector<vector<byte>> recBufsBytes(N);
-
-    prssKeys.resize(allSubsets.size());
-
-    //cout << "number of keys is " << allSubsets.size() << "for party " << m_partyId << endl;
-
-
-
-    //generate random keys for all subsets that
-
-    //get the number of keys to create for all the subsets for which I am the smallest lexicographical index
-
-    int numOfKeys = firstIndex[m_partyId+1] - firstIndex[m_partyId];
-
-    //cout << "num of keys that I am first is " << numOfKeys << "for party " << m_partyId << endl;
-
-    for(int i=0; i < N; i++)
-    {
-        recBufsBytes[i].resize((firstIndex[i + 1] - firstIndex[i]) * 16);
-    }
-    for(int i=0 ; i < m_partyId; i++){
-        sendBufsBytes[i].resize(0);
-    }
-    for(int i= m_partyId ; i < N; i++){
-        sendBufsBytes[i].resize(numOfKeys*16);
-    }
-
-    if(numOfKeys>0){
-
-
-
-        //generate a pseudo random generator to generate the keys
-        PrgFromOpenSSLAES prg(numOfKeys*16);
-        auto randomKey = prg.generateKey(128);
-        prg.setKey(randomKey);
-
-        vector<byte> fromPrg(numOfKeys*16);
-        prg.getPRGBytes(fromPrg, 0, numOfKeys*16);
-
-        __m128i *keys = (__m128i *)fromPrg.data();
-
-        int ctr;
-        //fill the send array for each party with the relevant keys
-        for(int i= m_partyId ; i < N; i++){
-
-            ctr = 0;
-
-            for(int j= firstIndex[m_partyId] ; j < firstIndex[m_partyId+1]; j++){
-
-                if(allSubsets[j][i] == true)//need to send the key to party i
-                {
-                    memcpy(sendBufsBytes[i].data() + ctr*16, (byte *)&(keys[j - firstIndex[m_partyId - 1]]), 16);
-                    ctr++;
-                }
-
-            }
-            //resize to only the number of keys needed
-            sendBufsBytes[i].resize(ctr*16);
-        }
-
-    }
-
-
-
-    roundFunctionSync(sendBufsBytes, recBufsBytes, 20);
-
-
-    //get the keys from the other parties
-
-    int ctr = 0;
-
-    for(int i=0; i < m_partyId+1; i++){
-
-        for(int j=0; j<recBufsBytes[i].size()/16; j++){
-
-            prssKeys[ctr] = ( (__m128i *)recBufsBytes[i].data() )[j];
-            ctr++;
-        }
-
-    }
-
-
-    prssPrgs.resize(allSubsets.size());
-
-    for(int i=0; i<prssPrgs.size(); i++){
-
-        byte * buf = (byte *)(&prssKeys[i]);
-        vector<byte> vec;
-        //copy the random bytes to a vector held in the secret key
-        copy_byte_array_to_byte_vector(buf, 16, vec, 0);
-        SecretKey sk(vec, "");
-
-
-        prssPrgs[i].setKey(sk);
-    }
-
-
-    /* for(int i=0; i<prssKeys.size();i++) {
-         cout << "the keys for party " << m_partyId << "is " << _mm_extract_epi64(prssKeys[i],0) << ", " <<
-                 _mm_extract_epi64(prssKeys[i],1) << endl;
-     }
- */}
-
-template <class FieldType>
-void Protocol<FieldType>::generateRandomSharesPRSS(int numOfRnadoms, vector<FieldType>& randomElementsToFill){
-
-    if (flag_print) {
-        cout << "in PRSS gen" << endl;
-    }
-
-    int fieldSizeBits = field->getElementSizeInBits();
-
-    for(int i=0; i<numOfRnadoms; i++){
-
-        randomElementsToFill[i] = *field->GetZero();
-
-        for(int j=0; j<prssPrgs.size();j++){
-
-            if(fieldSizeBits<-32) {
-                //NOTE: check if getRandom32 is enough
-                //randomElementsToFill[i] +=field->GetElement(prssPrgs[j].getRandom32()) * prssSubsetElement[j];
-                randomElementsToFill[i] =
-                        randomElementsToFill[i] + field->GetElement(prssPrgs[j].getRandom32()) * prssSubsetElement[j];
-            }
-            else{
-                //NOTE: check if getRandom32 is enough
-                //randomElementsToFill[i] +=field->GetElement(prssPrgs[j].getRandom32()) * prssSubsetElement[j];
-                randomElementsToFill[i] =
-                        randomElementsToFill[i] + field->GetElement(((unsigned long)prssPrgs[j].getRandom64())>>(64 - fieldSizeBits) ) * prssSubsetElement[j];
-            }
-        }
-
-    }
-}
 
 template <class FieldType>
 void Protocol<FieldType>::generateRandomShares(int numOfRandoms, vector<FieldType>& randomElementsToFill){
@@ -1115,7 +915,7 @@ void Protocol<FieldType>::initializationPhase()
     vector<FieldType> alpha1(N-T);
     vector<FieldType> alpha2(T);
 
-    beta[0] = field->GetElement(0); // zero of the field
+    beta[0] = *field->GetZero(); // zero of the field
     matrix_for_interpolate.allocate(1,N, field);
 
 
@@ -1180,10 +980,6 @@ void Protocol<FieldType>::initializationPhase()
         matrix_for_2t.Print();
 
     }
-
-    if(genRandomSharesType=="PRSS")
-        setupPRSS();
-
 
 
 }
@@ -1269,10 +1065,7 @@ void Protocol<FieldType>::generateBeaverTriples(int numOfTriples, vector<FieldTy
     auto t1 = high_resolution_clock::now();
 
     //first generate 2*numOfTriples random shares
-    if(genRandomSharesType=="HIM")
-        generateRandomShares(numOfTriples*2 ,aBShares);
-    else if(genRandomSharesType=="PRSS")
-        generateRandomSharesPRSS(numOfTriples*2,aBShares);
+    generateRandomShares(numOfTriples*2 ,aBShares);
 
 
     auto t2 = high_resolution_clock::now();
@@ -1830,10 +1623,7 @@ bool Protocol<FieldType>::verifyMults(int numOfpairs, vector<FieldType> &xShares
 
 
       //generate enough random shares for the AES key
-      if(genRandomSharesType=="HIM")
-        generateRandomShares(numOfRandomShares, randomSharesArray);
-      else if(genRandomSharesType=="PRSS")
-        generateRandomSharesPRSS(numOfRandomShares, randomSharesArray);
+      generateRandomShares(numOfRandomShares, randomSharesArray);
 
       openShare(numOfRandomShares, randomSharesArray, aesArray);
 
@@ -1935,15 +1725,21 @@ void Protocol<FieldType>::generatePseudoRandomElements(vector<byte> & aesKey, ve
     int fieldSizeBits = field->getElementSizeInBits();
     bool isLongRandoms;
     int size;
-    if(fieldSize>4){
+
+    if(fieldSize<=4 ){
+
+        isLongRandoms = false;
+        size = 4;
+    }
+    else if(fieldSize>4 && fieldSize<=8){
       isLongRandoms = true;
       size = 8;
     }
     else{
+        size = 16;
 
-      isLongRandoms = false;
-      size = 4;
     }
+
 
     if (flag_print) {
         cout << "size is" << size << "for party : " << m_partyId;
@@ -1954,85 +1750,18 @@ void Protocol<FieldType>::generatePseudoRandomElements(vector<byte> & aesKey, ve
     SecretKey sk(aesKey, "aes");
     prg.setKey(sk);
 
+
+    vector<byte> vec(fieldSize);
+
     for(int i=0; i<numOfRandomElements; i++){
 
-      if(isLongRandoms)
-          randomElementsToFill[i] = field->GetElement(((unsigned long)prg.getRandom64())>>(64 - fieldSizeBits));
-      else
-          randomElementsToFill[i] = field->GetElement(prg.getRandom32());
+        prg.getPRGBytes(vec, 0, fieldSize);
+
+        randomElementsToFill[i] = field->bytesToElement(vec.data());
+
     }
 
 }
-
-//template <class FieldType>
-//bool Protocol<FieldType>::verificationOfBatchedTriples(FieldType *x, FieldType *y, FieldType *z,
-//                                  FieldType *a, FieldType *b, FieldType *c,
-//                                  FieldType * randomElements, int numOfTriples){
-//
-//
-//
-//    vector<FieldType> r(numOfTriples);//vector holding the random shares generated
-//    vector<FieldType> rx(numOfTriples);//vector holding the multiplication of x and r
-//    vector<FieldType> firstMult(3*numOfTriples);//vector some computations
-//    vector<FieldType> secondMult(3*numOfTriples);//vector some computations
-//    vector<FieldType> outputMult(3*numOfTriples);//vector holding the 4*numOfTriples output of the multiplication
-//    vector<FieldType> v(numOfTriples);//vector holding the 4*numOfTriples output of the multiplication
-//
-//    //first generate numOfTriples random shares
-//    if(genRandomSharesType=="HIM")
-//        generateRandomShares(numOfTriples, r);
-//    else if(genRandomSharesType=="PRSS")
-//        generateRandomSharesPRSS(numOfTriples, r);
-//
-//    //run semi-honest multiplication on x and r
-//    //GRRHonestMultiplication(x, r.data(),rx, numOfTriples);
-//    honestMult->mult(x, r.data(),rx, numOfTriples);
-//
-//    //prepare the 4k pairs for multiplication
-//    for(int k=0; k<numOfTriples; k++){
-//
-//        firstMult[k*3] = rx[k] + a[k];//the row assignment (look at the paper)
-//        secondMult[k*3] = y[k];
-//
-//        firstMult[k*3+1] = a[k];
-//        secondMult[k*3+1] = y[k] + b[k];
-//
-//        firstMult[k*3+2] = r[k];
-//        secondMult[k*3+2] = z[k];
-//
-//
-//    }
-//
-//    //run semi-honest multiplication on x and r
-//    //GRRHonestMultiplication(firstMult.data(), secondMult.data(),outputMult, numOfTriples*4);
-//    honestMult->mult(firstMult.data(), secondMult.data(),outputMult, numOfTriples*3);
-//
-//    //compute the output share to check
-//    FieldType vk;
-//    FieldType VShare;
-//    for(int k=0; k<numOfTriples; k++){
-//        vk = outputMult[3*k + 2] -c[k] + outputMult[3*k + 1] - outputMult[3*k];
-//        VShare += vk*randomElements[k];
-//
-//    }
-//
-//
-//    //open [V]
-//    vector<FieldType> shareArr(1);
-//    vector<FieldType> secretArr(1);
-//    shareArr[0] = VShare;
-//
-//    openShare(1,shareArr,secretArr);
-//
-//    //check that V=0
-//    if(secretArr[0] != *field->GetZero())
-//        return false;
-//    else
-//        return true;
-//
-//}
-
-
 
 template <class FieldType>
 bool Protocol<FieldType>::verificationOfSingleTriples(FieldType *x, FieldType *y, FieldType *z,
@@ -2268,45 +1997,6 @@ void Protocol<FieldType>::sendDataFromP1(vector<byte> &sendBuf, int first, int l
 
 
 }
-
-template <class FieldType>
-void Protocol<FieldType>::printSubSet( bitset<MAX_PRSS_PARTIES> &l){
-    for(int i=0; i<MAX_PRSS_PARTIES;i++){
-
-        if(l[i]==true)
-            cout << " " << i+1;
-    }
-
-    cout<<endl;
-}
-
-template <class FieldType>
-void Protocol<FieldType>::subset(int size, int left, int index, bitset<MAX_PRSS_PARTIES> &l){
-
-
-
-    if(left==0){
-        //printSubSet(l);
-        if(l[m_partyId]==true) {
-            counter++;
-            allSubsets.push_back(l);
-        }
-        return;
-    }
-    for(int i=index; i<size;i++){
-        l.set(i);
-
-
-
-        subset(size,left-1,i+1,l);
-        l.reset(i);
-        if(index==0)
-            firstIndex.push_back(counter);
-
-    }
-
-}
-
 
 template <class FieldType>
 Protocol<FieldType>::~Protocol()
