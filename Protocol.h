@@ -50,7 +50,7 @@ public:
      * @param inputsFile the input file name
      * @param multType the semi honest multiplication method. Possible values are "DN"/"GRR"
      */
-    Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field,
+    Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits, TemplateField<FieldType> *field,
     		 string inputsFile = "inputsFile.txt", string commFile = "Parties.txt", string multType = "DN");
 
 
@@ -121,6 +121,8 @@ public:
 
     bool triples(int numOfTriples, vector<FieldType> &triples);
 
+    bool bits(int numOfBits, vector<FieldType> &bits);
+
     /**
      * Load the reference shares with input values from the reference integers.
      *
@@ -152,6 +154,10 @@ private:
     vector<FieldType> randomTAnd2TShares;
     int numOfOpens;
     int numOfMults;
+    int numOfBits;
+
+    FieldType inv_2;
+    vector<FieldType> &vecBitShares;
 
 
     string genRandomSharesType, multType/*, verifyType*/;
@@ -185,6 +191,7 @@ private:
     vector<FieldType> sharingBufTElements; // prepared T-sharings (my shares)
     vector<FieldType> sharingBuf2TElements; // prepared 2T-sharings (my shares)
     int trippleIndex;
+    int bitsIndex;
 
 
     HonestMultAbstract<FieldType> *honestMult = nullptr;//
@@ -275,6 +282,8 @@ private :
      */
     void generateBeaverTriples(int numOfTriples, vector<FieldType> &aBShares, vector<FieldType> &cToFill);
 
+    void generateRandomBits();
+
     /**
      * This protocol is secure only in the presence of a semi-honest adversary.
      */
@@ -348,7 +357,7 @@ private :
 
 
 template <class FieldType>
-Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, TemplateField<FieldType> *field, string inputsFile, string commFile,
+Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits , TemplateField<FieldType> *field, string inputsFile, string commFile,
                               string multType)
 {
 
@@ -357,6 +366,7 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, Tem
     //this->verifyType = verifyType;
     this->numOfOpens = numOfOpens;
     this->numOfMults = numOfMults;
+    this->numOfBits = numOfBits;
 
     if(multType=="GRR"){
         honestMult = new GRRHonestMult<FieldType>(this);
@@ -380,10 +390,13 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, Tem
         T++;
     }
 
+    inv_2 = (field->GetElement(1))/(field->GetElement(2)); // calculate the inverse of 3 in the field
+
 
     m_partyId = id;
     s = to_string(m_partyId);
     trippleIndex = 0;
+    bitsIndex = 0;
     multIndex = 0;
     counter = 0;
 
@@ -1016,6 +1029,7 @@ bool Protocol<FieldType>::offline()
 {
 
     trippleIndex = 0;
+    bitsIndex = 0;
 
     //generate triples for the DN multiplication protocol
     if(multType=="DN") {
@@ -1046,6 +1060,8 @@ bool Protocol<FieldType>::offline()
 
     //generate un-verified triples for the multiplication instruction
     generateBeaverTriples(numOfMults, randomABSharesForMult,cForMult);
+
+    generateRandomBits();
 
     return flag;
 
@@ -1086,6 +1102,74 @@ void Protocol<FieldType>::generateBeaverTriples(int numOfTriples, vector<FieldTy
     }
 }
 
+
+
+template <class FieldType>
+void Protocol<FieldType>::generateRandomBits(){
+
+    //int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
+
+    vector<vector<FieldType>> vecAllShares(N);//each subvector holds the share sent from the corresponding party
+    vector<FieldType> vecValues(numOfBits);//the 1/p-1 values
+    vector<FieldType> vecSharesSqaure(numOfBits);//the 1/p-1 values
+    vector<FieldType> vecValuesDummy(numOfBits);//a dummy vector needed by the interface but has no
+
+
+    //generate a random prg and extract bits from it
+    PrgFromOpenSSLAES prg((numOfBits/16) + 1);
+    auto key =prg.generateKey(128);
+    prg.setKey(key);
+    vector<byte> randomBytes(numOfBits);
+    prg.getPRGBytes(randomBytes, 0, numOfBits);
+
+    //set random -1/1 values
+    for(int i=0; i<numOfBits; i++)
+    {
+        if(randomBytes[i]& 1)
+            vecValues[i] = *field->GetOne();
+        else
+            vecValues[i] = *field->GetZero() - *field->GetOne();
+    }
+
+
+    for(int i=0; i<N ;i++){
+        vecAllShares[i].resise(numOfBits);
+    }
+
+    //generate lamda_i
+    for(int i=0; i<N; i++){
+
+        if(m_partyId==i)
+            makeShare(i, vecValues, vecAllShares[i]);
+        else
+            makeShare(i, vecValuesDummy, vecAllShares[i]);
+    }
+    auto t2 = high_resolution_clock::now();
+
+
+    vecBitShares = vecAllShares[0];
+    //mult all the shares for each party with the result of the previous round
+    //This should be optimized to have only log depth for the case of many parties
+    for(int i=1; i<N;i++){
+
+        honestMult->mult(vecBitShares.data(), vecAllShares[i], vecBitShares, numOfBits);
+    }
+
+    //square
+    honestMult->mult(vecBitShares.data(), vecBitShares.data(), vecSharesSqaure, numOfBits);
+
+
+    //now normalize the result to be 0/1
+
+    for(int i=0; i<numOfBits;i++)
+    {
+        //(lamda_i+1)/2. For performance mult by the inverse of 2
+        vecValues[i] = (vecValues[i]+ *field->GetOne())*inv_2;
+    }
+
+}
+
+
 template <class FieldType>
 bool Protocol<FieldType>::triples(int numOfTriples, vector<FieldType> &triples){
 
@@ -1106,6 +1190,24 @@ bool Protocol<FieldType>::triples(int numOfTriples, vector<FieldType> &triples){
     }
 
     return true;
+}
+template <class FieldType>
+bool Protocol<FieldType>::bits(int numOfBits, vector<FieldType> &bits){
+
+    if(bits.size()!=numOfBits) {
+
+        cerr<<"the size of bits array is not numOfBits" <<endl;
+        return false;
+    }
+
+
+    for(int i=0; i<numOfBits; i++){
+
+        bits[i] = vecBitShares[i];
+
+        bitsIndex++;
+
+    }
 }
 
 

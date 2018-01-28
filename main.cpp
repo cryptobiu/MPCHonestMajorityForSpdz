@@ -58,117 +58,117 @@ int main(int argc, char* argv[])
 //    string fieldType(argv[6]);
 
 //
-//    TemplateField<ZpMersenneLongElement> *field = new TemplateField<ZpMersenneLongElement>(0);
-//
-//    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), field);
-//
-//    auto t1 = high_resolution_clock::now();
-//    for(int i=0; i<times; i++) {
-//        vector<ZpMersenneLongElement> shareArr;
-//        vector<ZpMersenneLongElement> shareArr1;
-//        shareArr.resize(10);
-//        bool flag = protocol.input(0,shareArr);
-//         flag = protocol.input(1,shareArr1);
-//
-//        cout<<"---------input flag is-----------" << flag<<endl;
-//        flag = protocol.offline();
-//
-//        cout<<"---------offline flag is-----------" << flag<<endl;
-//
-//        vector<ZpMersenneLongElement> triples(3);
-//        flag = protocol.triples(1, triples);
-//
-//        vector<ZpMersenneLongElement> secrets(2);
-//
-//
-//        flag = protocol.openShare(2, shareArr, secrets);
-//
-//        cout<<" x = " <<secrets[0]<< " y = "<< secrets[1] << " xy = " <<secrets[0] * secrets[1]<<endl;
-//
-//
-//        secrets.resize(3);
-//        flag = protocol.openShare(3, triples, secrets);
-//
-//        auto shareA = triples[0];
-//        auto shareB = triples[1];
-//        auto shareC = triples[2];
-//
-//
-//
-//        cout<<"a = " <<secrets[0]<< " b = "<< secrets[1] << " c = " <<secrets[2]<<endl;
-//        cout<<"a*b = "<< secrets[0] * secrets[1]<<endl;
-//
-//
-//
-//
-//        vector<ZpMersenneLongElement> sharesToOpen(2);
-//        sharesToOpen[0] = shareArr[0] - shareA; //[x-a]
-//        sharesToOpen[1] = shareArr[1] - shareB;//[y-b]
-//
-//
-//
-//        flag = protocol.openShare(2, sharesToOpen, secrets);
-//
-//        auto xMinusA = secrets[0];
-//        auto yMinusB = secrets[0];
-//
-//        //cout<<"---------secrets----------- x-a = " <<xMinusA<< " y-b = "<< yMinusB <<endl;
-//
-//
-//
-//        //[z] = (x − a) · [b]            + (y − b) · [a]           + (x − a) · (y − b)       + [c]  = [x · y]
-//
-//        auto z = secrets[0] * triples[1] + secrets[1] * triples[0] + secrets[0] * secrets[1] + triples[2];
-//
-//        sharesToOpen[0] = z;
-//
-//        flag = protocol.openShare(1, sharesToOpen, secrets);
-//
-//        cout<<"using beaver -- x*y = " <<secrets[0]<<endl;
-//
-//
-//
-//        //generate one mult of inputs 3 and 4
-//        vector<ZpMersenneLongElement> shareOfXArr(1);
-//        vector<ZpMersenneLongElement> shareOfYArr(1);
-//        vector<ZpMersenneLongElement> shareOfXYArr(1);
-//        vector<ZpMersenneLongElement> secretOfXYArr(1);
-//        vector<ZpMersenneLongElement> inputSecrets(10);
-//
-//        shareOfXArr[0] = shareArr[2];
-//        shareOfYArr[0] = shareArr[3];
-//
-//        //mult the two shares
-//        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
-//
-//        cout<<"---------mult flag is-----------" << flag<<endl;
-//
-//        flag = protocol.openShare(10, shareArr, inputSecrets);
-//
-//        cout<<"x = " <<inputSecrets[2]<<"y = " <<inputSecrets[3]<<endl;
-//
-//        flag = protocol.openShare(1, shareOfXYArr, secretOfXYArr);
-//
-//        cout<<"internal mult -- x*y = " <<secretOfXYArr[0]<<endl;
-//
-//
-//        shareOfXArr[0] = shareArr[4];
-//        shareOfYArr[0] = shareArr[5];
-//
-//        //mult the two shares
-//        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
-//        flag = protocol.addShareAndScalar(shareOfXArr[0], shareOfYArr[0],shareOfXYArr[0]);
-//
-//
-//
-//        cout<<"x = " <<shareOfXArr[0]<<"s = " << shareOfYArr[0] <<" = " <<shareOfXYArr[0]<< endl;
-//
-//
-//
-//
-//        cout<<"---------mult flag is-----------" << flag<<endl;
-//
-//
+    TemplateField<ZpMersenneLongElement> *field = new TemplateField<ZpMersenneLongElement>(0);
+
+    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), 10,field);
+
+    auto t1 = high_resolution_clock::now();
+    for(int i=0; i<times; i++) {
+        vector<ZpMersenneLongElement> shareArr;
+        vector<ZpMersenneLongElement> shareArr1;
+        shareArr.resize(10);
+        vector<ZpMersenneLongElement> valueArr(10,2);
+        bool flag = protocol.makeShare(0, valueArr, shareArr);
+
+        cout<<"---------input flag is-----------" << flag<<endl;
+        flag = protocol.offline();
+
+        cout<<"---------offline flag is-----------" << flag<<endl;
+
+        vector<ZpMersenneLongElement> triples(3);
+        flag = protocol.triples(1, triples);
+
+        vector<ZpMersenneLongElement> secrets(2);
+
+
+        flag = protocol.openShare(2, shareArr, secrets);
+
+        cout<<" x = " <<secrets[0]<< " y = "<< secrets[1] << " xy = " <<secrets[0] * secrets[1]<<endl;
+
+
+        secrets.resize(3);
+        flag = protocol.openShare(3, triples, secrets);
+
+        auto shareA = triples[0];
+        auto shareB = triples[1];
+        auto shareC = triples[2];
+
+
+
+        cout<<"a = " <<secrets[0]<< " b = "<< secrets[1] << " c = " <<secrets[2]<<endl;
+        cout<<"a*b = "<< secrets[0] * secrets[1]<<endl;
+
+
+
+
+        vector<ZpMersenneLongElement> sharesToOpen(2);
+        sharesToOpen[0] = shareArr[0] - shareA; //[x-a]
+        sharesToOpen[1] = shareArr[1] - shareB;//[y-b]
+
+
+
+        flag = protocol.openShare(2, sharesToOpen, secrets);
+
+        auto xMinusA = secrets[0];
+        auto yMinusB = secrets[0];
+
+        //cout<<"---------secrets----------- x-a = " <<xMinusA<< " y-b = "<< yMinusB <<endl;
+
+
+
+        //[z] = (x − a) · [b]            + (y − b) · [a]           + (x − a) · (y − b)       + [c]  = [x · y]
+
+        auto z = secrets[0] * triples[1] + secrets[1] * triples[0] + secrets[0] * secrets[1] + triples[2];
+
+        sharesToOpen[0] = z;
+
+        flag = protocol.openShare(1, sharesToOpen, secrets);
+
+        cout<<"using beaver -- x*y = " <<secrets[0]<<endl;
+
+
+
+        //generate one mult of inputs 3 and 4
+        vector<ZpMersenneLongElement> shareOfXArr(1);
+        vector<ZpMersenneLongElement> shareOfYArr(1);
+        vector<ZpMersenneLongElement> shareOfXYArr(1);
+        vector<ZpMersenneLongElement> secretOfXYArr(1);
+        vector<ZpMersenneLongElement> inputSecrets(10);
+
+        shareOfXArr[0] = shareArr[2];
+        shareOfYArr[0] = shareArr[3];
+
+        //mult the two shares
+        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
+
+        cout<<"---------mult flag is-----------" << flag<<endl;
+
+        flag = protocol.openShare(10, shareArr, inputSecrets);
+
+        cout<<"x = " <<inputSecrets[2]<<"y = " <<inputSecrets[3]<<endl;
+
+        flag = protocol.openShare(1, shareOfXYArr, secretOfXYArr);
+
+        cout<<"internal mult -- x*y = " <<secretOfXYArr[0]<<endl;
+
+
+        shareOfXArr[0] = shareArr[4];
+        shareOfYArr[0] = shareArr[5];
+
+        //mult the two shares
+        flag = protocol.multShares(1, shareOfXArr, shareOfYArr,shareOfXYArr);
+        flag = protocol.addShareAndScalar(shareOfXArr[0], shareOfYArr[0],shareOfXYArr[0]);
+
+
+
+        cout<<"x = " <<shareOfXArr[0]<<"s = " << shareOfYArr[0] <<" = " <<shareOfXYArr[0]<< endl;
+
+
+
+
+        cout<<"---------mult flag is-----------" << flag<<endl;
+
+
 //
 ////
 ////        //spdz test for values
@@ -256,51 +256,51 @@ int main(int argc, char* argv[])
 
 
 
-    TemplateField<GF2E> *field = new TemplateField<GF2E>(40);
-
-    Protocol<GF2E> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), field);
-
-    auto t1 = high_resolution_clock::now();
-    for(int i=0; i<times; i++) {
-        vector<GF2E> shareArr;
-        vector<GF2E> shareArr1;
-        shareArr.resize(10);
+//    TemplateField<GF2E> *field = new TemplateField<GF2E>(40);
+//
+//    Protocol<GF2E> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), field);
+//
+//    auto t1 = high_resolution_clock::now();
+//    for(int i=0; i<times; i++) {
+//        vector<GF2E> shareArr;
+//        vector<GF2E> shareArr1;
+//        shareArr.resize(10);
 //        bool flag = protocol.input(0, shareArr);
 //        flag = protocol.input(1, shareArr1);
 //
 //        cout << "---------input flag is-----------" << flag << endl;
-        auto flag = protocol.offline();
-
-        cout << "---------offline flag is-----------" << flag << endl;
-
-        vector<GF2E> triples(3);
-        flag = protocol.triples(1, triples);
-
-        vector<GF2E> secrets(3);
-
-
-        flag = protocol.openShare(3, shareArr, secrets);
-
-        flag = protocol.multShares(2, shareArr, shareArr,shareArr);
-
-        cout<<" x = " <<secrets[0]<< " y = "<< secrets[1] << " xy = " <<secrets[0] * secrets[1]<< endl;
-
-
-        flag = protocol.openShare(1, shareArr, secrets);
-
-        cout<<" x*x = " <<secrets[0]<< "y*y = " <<secrets[1]<<endl;
-
-        secrets.resize(3);
-        flag = protocol.openShare(3, triples, secrets);
-
-        auto shareA = triples[0];
-        auto shareB = triples[1];
-        auto shareC = triples[2];
-
-
-
-        cout<<"a = " <<secrets[0]<< " b = "<< secrets[1] << " c = " <<secrets[2]<<endl;
-        cout<<"a*b = "<< secrets[0] * secrets[1]<<endl;
+//        auto flag = protocol.offline();
+//
+//        cout << "---------offline flag is-----------" << flag << endl;
+//
+//        vector<GF2E> triples(3);
+//        flag = protocol.triples(1, triples);
+//
+//        vector<GF2E> secrets(3);
+//
+//
+//        flag = protocol.openShare(3, shareArr, secrets);
+//
+//        flag = protocol.multShares(2, shareArr, shareArr,shareArr);
+//
+//        cout<<" x = " <<secrets[0]<< " y = "<< secrets[1] << " xy = " <<secrets[0] * secrets[1]<< endl;
+//
+//
+//        flag = protocol.openShare(1, shareArr, secrets);
+//
+//        cout<<" x*x = " <<secrets[0]<< "y*y = " <<secrets[1]<<endl;
+//
+//        secrets.resize(3);
+//        flag = protocol.openShare(3, triples, secrets);
+//
+//        auto shareA = triples[0];
+//        auto shareB = triples[1];
+//        auto shareC = triples[2];
+//
+//
+//
+//        cout<<"a = " <<secrets[0]<< " b = "<< secrets[1] << " c = " <<secrets[2]<<endl;
+//        cout<<"a*b = "<< secrets[0] * secrets[1]<<endl;
 //
 //
 //

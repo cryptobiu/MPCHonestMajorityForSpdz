@@ -49,7 +49,7 @@ void DNHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType>
     for (int k = 0; k < numOfTrupples; k++)//go over only the logit gates
     {
         //compute the share of xy-r
-        xyMinusRShares[k] = a[k]*b[k] - protocol->randomTAnd2TShares[2*k+1];
+        xyMinusRShares[k] = a[k]*b[k] - protocol->randomTAnd2TShares[offset + 2*k+1];
 
     }
 
@@ -130,7 +130,7 @@ void DNHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType>
     //after the xPlusAAndYPlusB array is filled, we are ready to fill the output of the mult gates
     for (int k = 0; k < numOfTrupples; k++)//go over only the logit gates
     {
-        cToFill[k] = protocol->randomTAnd2TShares[2*k] + xyMinusR[k];
+        cToFill[k] = protocol->randomTAnd2TShares[offset + 2*k] + xyMinusR[k];
     }
 
     offset+=numOfTrupples*2;

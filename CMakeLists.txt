@@ -17,8 +17,8 @@ set(SOURCE_FILES HIM.cpp main.cpp VDM.cpp MPCCommunication.cpp MPCCommunication.
 link_directories(/usr/ssl/lib/ $ENV{HOME}/libscapi/install/lib )
 
 
-#add_executable(MPCHonestMajorityForSpdz ${SOURCE_FILES})
-add_library(MPCHonestMajorityForSpdz ${SOURCE_FILES})
+add_executable(MPCHonestMajorityForSpdz ${SOURCE_FILES})
+#add_library(MPCHonestMajorityForSpdz ${SOURCE_FILES})
 
 
 TARGET_LINK_LIBRARIES(MPCHonestMajorityForSpdz $ENV{HOME}/ntl-9.10.0/src/ntl.a
