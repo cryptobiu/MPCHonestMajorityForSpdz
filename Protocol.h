@@ -22,8 +22,8 @@
 #include <thread>
 
 #define flag_print false
-#define flag_print_timings true
-#define flag_print_output true
+#define flag_print_timings false
+#define flag_print_output false
 
 
 
@@ -452,7 +452,7 @@ void Protocol<FieldType>::readMyInputs(int numOfInputs)
 
     if(index<numOfInputs)
         cerr<<"---------the input file does not contain enough inputs-----"<<endl;
-    cout<<"after read inputs" <<endl;
+    //cout<<"after read inputs" <<endl;
 
 }
 
@@ -477,8 +477,8 @@ bool Protocol<FieldType>::makeShare(int partyID, vector<FieldType> &valueArr, ve
     vector<int> sizes(N);
 
 
-    cout<< "before input: "<<endl;
-    cout<< "shareArray size is: "<<shareArr.size()<<endl;
+    //cout<< "before input: "<<endl;
+    //cout<< "shareArray size is: "<<shareArr.size()<<endl;
 
 
     // prepare the shares for the input
@@ -1046,16 +1046,16 @@ bool Protocol<FieldType>::offline()
     }
 
 
-    cout<<"before offline"<<endl;
+    //cout<<"before offline"<<endl;
     honestMult->invokeOffline();//need to pust some
 
-    cout<<"after offline"<<endl;
+    //cout<<"after offline"<<endl;
 
 
     //generate verified triples for the "open" instruction of SPDZ
     generateBeaverTriples(numOfOpens*2, randomABShares,c);
 
-    cout<<"after generating triples"<<endl;
+    //cout<<"after generating triples"<<endl;
 
     bool flag = verifyTriples();
 
