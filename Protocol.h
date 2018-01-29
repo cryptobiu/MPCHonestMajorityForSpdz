@@ -1224,6 +1224,8 @@ bool Protocol<FieldType>::bits(int numOfBits, vector<FieldType> &bits){
         bitsIndex++;
 
     }
+
+    return true;
 }
 
 
