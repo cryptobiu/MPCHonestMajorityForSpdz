@@ -117,7 +117,7 @@ public:
     /**
      * This function currently does nothing, since the verification is embedded in the open procedure.
      */
-    bool verify();
+    bool verify() { return true; }
 
     bool triples(int numOfTriples, vector<FieldType> &triples);
 
@@ -130,7 +130,7 @@ public:
      * @param shareArr an output array to fill with the shares of the inputs
      * @param valueArr the immediate values to be used as inputs
      */
-    bool load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<std::string> &valueStrArr);
+    //bool load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<std::string> &valueStrArr);
 
 
     /**
@@ -552,6 +552,7 @@ bool Protocol<FieldType>::makeShare(int partyID, vector<FieldType> &valueArr, ve
     return inputVer(shareArr);
 }
 
+/*
 template <class FieldType>
 bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &shareArr, const vector<std::string> &valueStrArr)
 {
@@ -632,7 +633,7 @@ bool Protocol<FieldType>::load_share_immediates(int partyID, vector<FieldType> &
     }
 
     return inputVer(shareArr);
-}
+}*/
 
 
 template <class FieldType>
