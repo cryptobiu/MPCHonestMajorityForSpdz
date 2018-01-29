@@ -157,7 +157,7 @@ private:
     int numOfBits;
 
     FieldType inv_2;
-    vector<FieldType> &vecBitShares;
+    vector<FieldType> vecBitShares;
 
 
     string genRandomSharesType, multType/*, verifyType*/;
@@ -282,7 +282,7 @@ private :
      */
     void generateBeaverTriples(int numOfTriples, vector<FieldType> &aBShares, vector<FieldType> &cToFill);
 
-    void generateRandomBits();
+    bool generateRandomBits();
 
     /**
      * This protocol is secure only in the presence of a semi-honest adversary.
@@ -357,8 +357,8 @@ private :
 
 
 template <class FieldType>
-Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits , TemplateField<FieldType> *field, string inputsFile, string commFile,
-                              string multType)
+Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits ,
+                              TemplateField<FieldType> *field, string inputsFile, string commFile, string multType)
 {
 
 
@@ -1035,7 +1035,7 @@ bool Protocol<FieldType>::offline()
     if(multType=="DN") {
 
         //if(verifyType=="Single")
-            offlineDNForMultiplication(2 * numOfOpens + numOfMults);
+            offlineDNForMultiplication(2 * numOfOpens + numOfMults + N*numOfBits);
 //        else if(verifyType=="Batch") {
 //
 //            int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
@@ -1061,7 +1061,7 @@ bool Protocol<FieldType>::offline()
     //generate un-verified triples for the multiplication instruction
     generateBeaverTriples(numOfMults, randomABSharesForMult,cForMult);
 
-    generateRandomBits();
+    flag = generateRandomBits();
 
     return flag;
 
@@ -1105,13 +1105,14 @@ void Protocol<FieldType>::generateBeaverTriples(int numOfTriples, vector<FieldTy
 
 
 template <class FieldType>
-void Protocol<FieldType>::generateRandomBits(){
+bool Protocol<FieldType>::generateRandomBits(){
 
     //int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
 
     vector<vector<FieldType>> vecAllShares(N);//each subvector holds the share sent from the corresponding party
     vector<FieldType> vecValues(numOfBits);//the 1/p-1 values
-    vector<FieldType> vecSharesSqaure(numOfBits);//the 1/p-1 values
+    vector<FieldType> vecSharesSqaure(numOfBits);
+    vector<FieldType> vecValuesSquare(numOfBits);
     vector<FieldType> vecValuesDummy(numOfBits);//a dummy vector needed by the interface but has no
 
 
@@ -1133,7 +1134,7 @@ void Protocol<FieldType>::generateRandomBits(){
 
 
     for(int i=0; i<N ;i++){
-        vecAllShares[i].resise(numOfBits);
+        vecAllShares[i].resize(numOfBits);
     }
 
     //generate lamda_i
@@ -1152,11 +1153,15 @@ void Protocol<FieldType>::generateRandomBits(){
     //This should be optimized to have only log depth for the case of many parties
     for(int i=1; i<N;i++){
 
-        honestMult->mult(vecBitShares.data(), vecAllShares[i], vecBitShares, numOfBits);
+        honestMult->mult(vecBitShares.data(), vecAllShares[i].data(), vecBitShares, numOfBits);
     }
 
     //square
     honestMult->mult(vecBitShares.data(), vecBitShares.data(), vecSharesSqaure, numOfBits);
+
+    //open the squared shares for checking
+
+    openShare(numOfBits,vecSharesSqaure, vecValuesSquare);
 
 
     //now normalize the result to be 0/1
@@ -1164,8 +1169,18 @@ void Protocol<FieldType>::generateRandomBits(){
     for(int i=0; i<numOfBits;i++)
     {
         //(lamda_i+1)/2. For performance mult by the inverse of 2
-        vecValues[i] = (vecValues[i]+ *field->GetOne())*inv_2;
+        vecBitShares[i] = (vecBitShares[i]+ *field->GetOne())*inv_2;
     }
+
+
+    //verify that no one cheated
+    for(int i=0; i<numOfBits; i++){
+
+        if(vecValuesSquare[i]!=*field->GetOne())
+            return false;
+    }
+
+    return true;
 
 }
 
@@ -1203,7 +1218,7 @@ bool Protocol<FieldType>::bits(int numOfBits, vector<FieldType> &bits){
 
     for(int i=0; i<numOfBits; i++){
 
-        bits[i] = vecBitShares[i];
+        bits[i] = vecBitShares[bitsIndex];
 
         bitsIndex++;
 

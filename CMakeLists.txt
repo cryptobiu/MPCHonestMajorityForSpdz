@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(MPCHonestMajorityForSpdz)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -maes -mpclmul -mbmi2 -fPIC" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -std=c++11 -maes -mpclmul -mbmi2 -fPIC" )
 
 
 
@@ -17,8 +17,8 @@ set(SOURCE_FILES HIM.cpp main.cpp VDM.cpp MPCCommunication.cpp MPCCommunication.
 link_directories(/usr/ssl/lib/ $ENV{HOME}/libscapi/install/lib )
 
 
-add_executable(MPCHonestMajorityForSpdz ${SOURCE_FILES})
-#add_library(MPCHonestMajorityForSpdz ${SOURCE_FILES})
+#add_executable(MPCHonestMajorityForSpdz ${SOURCE_FILES})
+add_library(MPCHonestMajorityForSpdz ${SOURCE_FILES})
 
 
 TARGET_LINK_LIBRARIES(MPCHonestMajorityForSpdz $ENV{HOME}/ntl-9.10.0/src/ntl.a

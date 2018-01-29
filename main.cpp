@@ -60,13 +60,16 @@ int main(int argc, char* argv[])
 //
     TemplateField<ZpMersenneLongElement> *field = new TemplateField<ZpMersenneLongElement>(0);
 
-    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]), 10,field);
+    Protocol<ZpMersenneLongElement> protocol(3, atoi(argv[1]),atoi(argv[2]), atoi(argv[3]),  10,field);
 
     auto t1 = high_resolution_clock::now();
     for(int i=0; i<times; i++) {
         vector<ZpMersenneLongElement> shareArr;
         vector<ZpMersenneLongElement> shareArr1;
         shareArr.resize(10);
+        vector<ZpMersenneLongElement> secrets(10,4);
+
+
         vector<ZpMersenneLongElement> valueArr(10,2);
         bool flag = protocol.makeShare(0, valueArr, shareArr);
 
@@ -75,10 +78,15 @@ int main(int argc, char* argv[])
 
         cout<<"---------offline flag is-----------" << flag<<endl;
 
+        flag = protocol.bits(10, shareArr);
+        flag = protocol.openShare(10, shareArr, secrets);
+
+        cout<<secrets[0]<< ", "<< secrets[1]<< ", "<< secrets[2]<<", "<< secrets[3] <<endl;
+
         vector<ZpMersenneLongElement> triples(3);
         flag = protocol.triples(1, triples);
 
-        vector<ZpMersenneLongElement> secrets(2);
+
 
 
         flag = protocol.openShare(2, shareArr, secrets);
