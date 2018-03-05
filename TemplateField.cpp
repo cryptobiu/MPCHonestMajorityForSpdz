@@ -5,7 +5,13 @@
 #include "TemplateField.h"
 
 #include "ZpMersenneLongElement.h"
+#include "Mersenne127.h"
 
+
+static const int order = -1;
+static const int size = 8;
+static const int endian = 0;
+static const int nails = 0;
 
 using namespace NTL;
 
@@ -183,3 +189,46 @@ ZZ_p TemplateField<ZZ_p>::bytesToElement(unsigned char* elemenetInBytes){
     return to_ZZ_p(zz);
 }
 
+
+template <>
+TemplateField<Mersenne127>::TemplateField(long fieldParam)
+{
+    this->elementSizeInBytes = 16;//round up to the next byte
+    this->elementSizeInBits = 127;
+
+    auto randomKey = prg.generateKey(128);
+    prg.setKey(randomKey);
+
+    m_ZERO = new Mersenne127(0);
+    m_ONE = new Mersenne127(1);
+}
+
+template <>
+void TemplateField<Mersenne127>::elementToBytes(unsigned char* elemenetInBytes, Mersenne127& element)
+{
+    memset(elemenetInBytes, 0, 16);
+    mpz_export((void*)elemenetInBytes, NULL, order, size, endian, nails, *element.get_mpz_t());
+}
+
+template <>
+Mersenne127 TemplateField<Mersenne127>::bytesToElement(unsigned char* elemenetInBytes)
+{
+    mpz_t value;
+    mpz_init(value);
+    mpz_import(value, 2, order, size, endian, nails, (void*)elemenetInBytes);
+    Mersenne127 element(value);
+    mpz_clear(value);
+    return element;
+}
+
+template <>
+Mersenne127 TemplateField<Mersenne127>::GetElement(long b)
+{
+    if(b == 1)		return *m_ONE;
+    if(b == 0)		return *m_ZERO;
+    else
+    {
+        Mersenne127 element(b);
+        return element;
+    }
+}
