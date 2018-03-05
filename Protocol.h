@@ -47,11 +47,10 @@ public:
      * @param id the party id.
      * @param numOfOpens the number of opens needed to execute the SPDZ program.
      * @param field the related field, currently restriced to mersenne 61.
-     * @param inputsFile the input file name
      * @param multType the semi honest multiplication method. Possible values are "DN"/"GRR"
      */
     Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits, TemplateField<FieldType> *field,
-    		 string inputsFile = "inputsFile.txt", string commFile = "Parties.txt", string multType = "DN");
+    		 string commFile = "Parties.txt", string multType = "DN");
 
 
     /**
@@ -164,7 +163,7 @@ private:
     ProtocolTimer* protocolTimer;
 
     string s;
-    string inputsFile, outputFile;
+    string outputFile;
     vector<FieldType> beta;
     HIM<FieldType> matrix_for_interpolate;
     HIM<FieldType> matrix_for_t;
@@ -196,9 +195,6 @@ private:
 
     HonestMultAbstract<FieldType> *honestMult = nullptr;//
 
-    vector<int> myInputs;
-
-
 
 private :
 
@@ -217,12 +213,6 @@ private :
 
     vector<int> firstIndex;
     int counter = 0;
-
-
-    /**
-     * This method reads text file and inits a vector of Inputs according to the file.
-     */
-    void readMyInputs(int numOfInputs);
 
     /**
      * We describe the protocol initialization.
@@ -358,7 +348,7 @@ private :
 
 template <class FieldType>
 Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int numOfBits ,
-                              TemplateField<FieldType> *field, string inputsFile, string commFile, string multType)
+                              TemplateField<FieldType> *field, string commFile, string multType)
 {
 
 
@@ -383,7 +373,6 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int
     //comm = Communication::getInstance(n, id, address);
     N = n;
     T = n/2 - 1;
-    this->inputsFile = inputsFile;
     this->outputFile = outputFile;
     if(n%2 > 0)
     {
@@ -429,33 +418,6 @@ Protocol<FieldType>::Protocol(int n, int id, int numOfOpens, int numOfMults, int
         cout << "time in milliseconds initializationPhase: " << duration << endl;
     }
 }
-
-
-template <class FieldType>
-void Protocol<FieldType>::readMyInputs(int numOfInputs)
-{
-
-    myInputs.resize(numOfInputs);
-    //cout<<"inputs file" << inputsFile<<endl;
-    ifstream myfile;
-    int input;
-    int index = 0;
-    myfile.open(inputsFile);
-    for(int i=0; i<numOfInputs && !(myfile.eof());i++ ){
-        myfile >> input;
-        myInputs[i] = input;
-
-        index++;
-
-    }
-    myfile.close();
-
-    if(index<numOfInputs)
-        cerr<<"---------the input file does not contain enough inputs-----"<<endl;
-    //cout<<"after read inputs" <<endl;
-
-}
-
 
 /**
  * the function implements the second step of Input Phase:
