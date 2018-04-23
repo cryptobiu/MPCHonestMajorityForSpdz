@@ -998,7 +998,7 @@ bool Protocol<FieldType>::offline()
     if(multType=="DN") {
 
         //if(verifyType=="Single")
-            offlineDNForMultiplication(2 * numOfOpens + numOfMults + N*numOfBits);
+            offlineDNForMultiplication(2 * numOfOpens + 2*numOfMults + N*numOfBits);
 //        else if(verifyType=="Batch") {
 //
 //            int iterations =   (5 + field->getElementSizeInBytes() - 1) / field->getElementSizeInBytes();
