@@ -1151,11 +1151,10 @@ bool Protocol<FieldType>::generateRandomBits(){
 template <class FieldType>
 bool Protocol<FieldType>::triples(int numOfTriples, vector<FieldType> &triples){
 
-    if(triples.size()/3!=numOfTriples) {
-
-        cerr<<"the size of triples array should be a multiplication of 3 and numOfTriples" <<endl;
+	if((3*numOfTriples) > triples.size()) {
+		cerr << "Not enough size in output vector; required " << (3*numOfTriples) << "; has " << triples.size() << endl;
         return false;
-    }
+	}
 
     for(int i=0; i<numOfTriples; i++){
 
@@ -1172,9 +1171,9 @@ bool Protocol<FieldType>::triples(int numOfTriples, vector<FieldType> &triples){
 template <class FieldType>
 bool Protocol<FieldType>::bits(int numOfBits, vector<FieldType> &bits){
 
-    if(bits.size()!=numOfBits) {
+    if(bits.size() < numOfBits) {
 
-        cerr<<"the size of bits array is not numOfBits" <<endl;
+        cerr<<"the size of bits array is less than numOfBits" <<endl;
         return false;
     }
 
@@ -1785,7 +1784,7 @@ bool Protocol<FieldType>::multShares(int numOfpairs, vector<FieldType> &xShares,
 
 
     //check that the arrays are in the right size
-    if(xShares.size()!=numOfpairs || yShares.size()!=numOfpairs || outputXYShares.size()!=numOfpairs){
+    if(xShares.size()<numOfpairs || yShares.size()<numOfpairs || outputXYShares.size()<numOfpairs){
         return false;
     }
     //call the multiplication protocol
