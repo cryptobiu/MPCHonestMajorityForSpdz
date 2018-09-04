@@ -2,6 +2,8 @@
 #include <string>
 #include <memory.h>
 
+#include "TemplateField.h"
+
 const char Mersenne127::M127[] = "170141183460469231731687303715884105727";
 
 class Mersenne127Helper
@@ -145,3 +147,62 @@ std::istream& operator >> (std::istream& s, Mersenne127 & m127)
 	mpz_set_str(m127.m_value, str_m127.c_str(), 10);
 	return s;
 }
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+template <>
+TemplateField<ZpMersenne127Element>::TemplateField(long fieldParam) {
+
+    ZpMersenne127Element::init();
+
+    this->elementSizeInBytes = 16;//round up to the next byte
+    this->elementSizeInBits = 127;
+
+    auto randomKey = prg.generateKey(128);
+    prg.setKey(randomKey);
+
+    m_ZERO = new ZpMersenne127Element(0);
+    m_ONE = new ZpMersenne127Element(1);
+
+
+}
+
+template <>
+ZpMersenne127Element TemplateField<ZpMersenne127Element>::GetElement(long b) {
+
+
+    if(b == 1)
+    {
+        return *m_ONE;
+    }
+    if(b == 0)
+    {
+        return *m_ZERO;
+    }
+    else{
+        ZpMersenne127Element element(b);
+        return element;
+    }
+}
+
+template <>
+void TemplateField<ZpMersenne127Element>::elementToBytes(unsigned char* elemenetInBytes, ZpMersenne127Element& element){
+
+    memcpy(elemenetInBytes, (byte*)(&element.elem), 16);
+}
+
+/* Not used in this present library
+template <>
+void TemplateField<ZpMersenne127Element>::elementVectorToByteVector(vector<ZpMersenne127Element> &elementVector, vector<byte> &byteVector){
+
+    copy_byte_array_to_byte_vector((byte *)elementVector.data(), elementVector.size()*elementSizeInBytes, byteVector,0);
+}
+*/
+
+template <>
+ZpMersenne127Element TemplateField<ZpMersenne127Element>::bytesToElement(unsigned char* elemenetInBytes){
+
+    return ZpMersenne127Element((__uint128_t)(*(__uint128_t *)elemenetInBytes));
+}
+
+__uint128_t ZpMersenne127Element::p = 0;
