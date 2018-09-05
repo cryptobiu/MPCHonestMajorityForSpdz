@@ -44,26 +44,19 @@ public: //TODO return to private after tesing
 
     //we use gcc 5.4 supported uint 128 bit type
     __uint128_t elem;
-    static __uint128_t p;
+    static const __uint128_t p;
     //the prime is 2^127-1
 
 public:
-
-
-    //as c++ does not support 127 digits in a const, currently we need to call init() on the class
-    //to initialize p; TBD improve this
-    void static init() {
-        p = 0;
-        u_int64_t *p64 = (u_int64_t*)&p;
-        p64[1] = 0x8000000000000000;
-
-        p-=1;
-    }
 
     ZpMersenne127Element(){elem = 0;};
     ZpMersenne127Element(__uint128_t e)
     {
         this->elem = e;
+        if(this->elem>=p){
+
+            this->elem-= p;
+        }
     }
 
     inline ZpMersenne127Element& operator=(const ZpMersenne127Element& other){
@@ -103,14 +96,16 @@ public:
     ZpMersenne127Element operator/(const ZpMersenne127Element& f2)
     {
         mp_limb_t* me = (mp_limb_t *) &elem;
-        mp_limb_t* elem = (mp_limb_t *) &(f2.elem); //keep same naming convention as other ZpMersenne classes
+
+        auto f2Eleme = f2.elem;
+        mp_limb_t* elemOff2 = (mp_limb_t *) &(f2Eleme); //keep same naming convention as other ZpMersenne classes
         mp_limb_t *d = (mp_limb_t *) &p; //d is actually p
         mp_limb_t result_1[2]; //result is used a few times. we do not allow override in low-level, so more vars.
         mp_limb_t result_2[4]; //result of mult is 256 bits (limb is 64 bit)
         __uint128_t res;
 
         mp_limb_t tp[16]; //scratch space for invert
-        mpn_sec_invert (result_1, elem, d, 2, 256, tp);
+        mpn_sec_invert (result_1, elemOff2, d, 2, 256, tp);
         mpn_mul (result_2, result_1, 2,me, 2);
 
         mp_limb_t q[4];

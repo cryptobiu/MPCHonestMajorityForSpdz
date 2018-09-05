@@ -1021,10 +1021,14 @@ bool Protocol<FieldType>::offline()
 
     bool flag = verifyTriples();
 
+    cout << "triples verified; " << ((flag)? "1": "0") << endl;
+
     //generate un-verified triples for the multiplication instruction
     generateBeaverTriples(numOfMults, randomABSharesForMult,cForMult);
 
     flag = generateRandomBits();
+
+    cout << "random bits generated; " << ((flag)? "1": "0") << endl;
 
     return flag;
 

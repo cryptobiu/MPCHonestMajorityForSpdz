@@ -92,17 +92,23 @@ FieldType TemplateField<FieldType>::stringToElement(const string &str) {
 /**
  * A random random field element, uniform distribution
  */
+/*
 template <class FieldType>
 FieldType TemplateField<FieldType>::Random() {
     unsigned long b;
     if(elementSizeInBytes<=4)
         b = prg.getRandom32();
-    else{
+    else if(elementSizeInBytes<=8) {
         b = prg.getRandom64()>>(64-elementSizeInBits);
+    } else {
+    	__uint128_t v = ((__uint128_t)prg.getRandom64())<<64 | (__uint128_t)prg.getRandom64();
+    	v = v >> (128-elementSizeInBits);
+    	return v;
     }
 
     return GetElement(b);
 }
+*/
 
 template <class FieldType>
 FieldType* TemplateField<FieldType>::GetZero()

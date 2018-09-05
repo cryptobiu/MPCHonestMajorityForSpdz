@@ -156,6 +156,12 @@ ZpMersenneLongElement TemplateField<ZpMersenneLongElement>::bytesToElement(unsig
 }
 
 template <>
+ZpMersenneLongElement TemplateField<ZpMersenneLongElement>::Random() {
+    unsigned long b = (prg.getRandom64() >> 3);
+    return GetElement(b);
+}
+
+template <>
 GF2E TemplateField<GF2E>::bytesToElement(unsigned char* elemenetInBytes){
 
     //first create a GF2X
@@ -168,6 +174,16 @@ GF2E TemplateField<GF2E>::bytesToElement(unsigned char* elemenetInBytes){
     return to_GF2E(polynomialElement);
 }
 
+template <>
+GF2E TemplateField<GF2E>::Random() {
+    unsigned long b;
+    if(elementSizeInBytes<=4)
+        b = prg.getRandom32();
+    else {
+        b = prg.getRandom64()>>(64-elementSizeInBits);
+    }
+    return GetElement(b);
+}
 
 template <>
 void TemplateField<ZZ_p>::elementToBytes(unsigned char* elemenetInBytes, ZZ_p& element){
@@ -232,3 +248,11 @@ Mersenne127 TemplateField<Mersenne127>::GetElement(long b)
         return element;
     }
 }
+
+template <>
+ZpMersenne127Element TemplateField<ZpMersenne127Element>::Random() {
+	__uint128_t v = ((__uint128_t)prg.getRandom64())<<64 | (__uint128_t)prg.getRandom64();
+	v = v >> 1;
+	return ZpMersenne127Element(v);
+}
+

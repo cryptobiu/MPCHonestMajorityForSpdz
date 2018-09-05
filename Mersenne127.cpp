@@ -153,8 +153,6 @@ std::istream& operator >> (std::istream& s, Mersenne127 & m127)
 template <>
 TemplateField<ZpMersenne127Element>::TemplateField(long fieldParam) {
 
-    ZpMersenne127Element::init();
-
     this->elementSizeInBytes = 16;//round up to the next byte
     this->elementSizeInBits = 127;
 
@@ -205,4 +203,4 @@ ZpMersenne127Element TemplateField<ZpMersenne127Element>::bytesToElement(unsigne
     return ZpMersenne127Element((__uint128_t)(*(__uint128_t *)elemenetInBytes));
 }
 
-__uint128_t ZpMersenne127Element::p = 0;
+const __uint128_t ZpMersenne127Element::p = ((__uint128_t)0x7fffffffffffffff)<<64 |  (__uint128_t)0xffffffffffffffff;
