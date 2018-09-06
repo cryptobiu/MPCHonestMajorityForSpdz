@@ -199,8 +199,8 @@ private:
 private :
 
 
-    void roundFunctionSync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round);
-    void exchangeData(vector<vector<byte>> &sendBufs,vector<vector<byte>> &recBufs, int first, int last);
+    void roundFunctionSync(vector<vector<FieldType>> &sendBufs, vector<vector<FieldType>> &recBufs, int round);
+    void exchangeData(vector<vector<FieldType>> &sendBufs,vector<vector<FieldType>> &recBufs, int first, int last);
     void roundFunctionSyncBroadcast(vector<byte> &message, vector<vector<byte>> &recBufs);
     void recData(vector<byte> &message, vector<vector<byte>> &recBufs, int first, int last);
     void roundFunctionSyncForP1(vector<byte> &myShare, vector<vector<byte>> &recBufs);
@@ -431,8 +431,8 @@ bool Protocol<FieldType>::makeShare(int partyID, vector<FieldType> &valueArr, ve
     // the number of random double sharings we need altogether
     vector<FieldType> x1(N),y1(N);
     vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
-    vector<vector<byte>> recBufBytes(N);
+    //vector<vector<byte>> sendBufsBytes(N);
+    //vector<vector<byte>> recBufBytes(N);
     vector<vector<FieldType>> recBufElements(N);
 
     int index = 0;
@@ -480,26 +480,28 @@ bool Protocol<FieldType>::makeShare(int partyID, vector<FieldType> &valueArr, ve
     int fieldByteSize = field->getElementSizeInBytes();
     for(int i=0; i < N; i++)
     {
-        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
+        //sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
         //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
-        recBufBytes[i].resize(sizes[i]*fieldByteSize);
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
+        //recBufBytes[i].resize(sizes[i]*fieldByteSize);
+//        for(int j=0; j<sendBufsElements[i].size();j++) {
+//            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+//        }
+
+        recBufElements[i].resize(sizes[i]);
     }
 
 
-    roundFunctionSync(sendBufsBytes, recBufBytes,10);
+    roundFunctionSync(sendBufsElements, recBufElements,10);
 
 
     //turn the bytes to elements
-    for(int i=0; i < N; i++)
-    {
-        recBufElements[i].resize((recBufBytes[i].size()) / fieldByteSize);
-        for(int j=0; j<recBufElements[i].size();j++) {
-            recBufElements[i][j] = field->bytesToElement(recBufBytes[i].data() + ( j * fieldByteSize));
-        }
-    }
+//    for(int i=0; i < N; i++)
+//    {
+//        recBufElements[i].resize((recBufBytes[i].size()) / fieldByteSize);
+//        for(int j=0; j<recBufElements[i].size();j++) {
+//            recBufElements[i][j] = field->bytesToElement(recBufBytes[i].data() + ( j * fieldByteSize));
+//        }
+//    }
 
     for (int k = 0; k < shareArr.size(); k++)
     {
@@ -642,14 +644,15 @@ void Protocol<FieldType>::generateRandomShares(int numOfRandoms, vector<FieldTyp
 
 
     int index = 0;
-    vector<vector<byte>> recBufsBytes(N);
+    //vector<vector<byte>> recBufsBytes(N);
+    vector<vector<FieldType>> recBufsElement(N);
     int robin = 0;
     int no_random = numOfRandoms;
 
     vector<FieldType> x1(N),y1(N), x2(N),y2(N), t1(N), r1(N), t2(N), r2(N);;
 
     vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
+   // vector<vector<byte>> sendBufsBytes(N);
 
     // the number of buckets (each bucket requires one double-sharing
     // from each party and gives N-2T random double-sharings)
@@ -662,8 +665,8 @@ void Protocol<FieldType>::generateRandomShares(int numOfRandoms, vector<FieldTyp
     for(int i=0; i < N; i++)
     {
         sendBufsElements[i].resize(no_buckets);
-        sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
-        recBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
+        //sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
+        recBufsElement[i].resize(no_buckets);
     }
 
     /**
@@ -704,34 +707,35 @@ void Protocol<FieldType>::generateRandomShares(int numOfRandoms, vector<FieldTyp
         cout << "T" << T << endl;
     }
 
-    int fieldByteSize = field->getElementSizeInBytes();
-    for(int i=0; i < N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//    int fieldByteSize = field->getElementSizeInBytes();
+//    for(int i=0; i < N; i++)
+//    {
+//        for(int j=0; j<sendBufsElements[i].size();j++) {
+//            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+//        }
+//    }
 
-    roundFunctionSync(sendBufsBytes, recBufsBytes,4);
+    roundFunctionSync(sendBufsElements, recBufsElement,4);
 
 
     if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
-
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
+//        for (int i = 0; i < N; i++) {
+//            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
+//
+//                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
+//            }
+//        }
+//        for (int i = 0; i < N; i++) {
+//            for (int k = 0; k < recBufsBytes[0].size(); k++) {
+//                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
+//            }
+//        }
     }
 
     for(int k=0; k < no_buckets; k++) {
         for (int i = 0; i < N; i++) {
-            t1[i] = field->bytesToElement(recBufsBytes[i].data() + (k * fieldByteSize));
+            //t1[i] = field->bytesToElement(recBufsBytes[i].data() + (k * fieldByteSize));
+            t1[i] = recBufsElement[i][k];
 
         }
         matrix_vand_transpose.MatrixMult(t1, r1,N-T);
@@ -753,14 +757,15 @@ void Protocol<FieldType>::generateRandom2TAndTShares(int numOfRandomPairs, vecto
 
 
     int index = 0;
-    vector<vector<byte>> recBufsBytes(N);
+    //vector<vector<byte>> recBufsBytes(N);
+    vector<vector<FieldType>> recBufsElements(N);
     int robin = 0;
     int no_random = numOfRandomPairs;
 
     vector<FieldType> x1(N),y1(N), x2(N),y2(N), t1(N), r1(N), t2(N), r2(N);;
 
     vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
+    //vector<vector<byte>> sendBufsBytes(N);
 
     // the number of buckets (each bucket requires one double-sharing
     // from each party and gives N-2T random double-sharings)
@@ -773,8 +778,9 @@ void Protocol<FieldType>::generateRandom2TAndTShares(int numOfRandomPairs, vecto
     for(int i=0; i < N; i++)
     {
         sendBufsElements[i].resize(no_buckets*2);
-        sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes()*2);
-        recBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes()*2);
+        //sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes()*2);
+        //recBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes()*2);
+        recBufsElements[i].resize(no_buckets*2);
     }
 
     /**
@@ -827,35 +833,39 @@ void Protocol<FieldType>::generateRandom2TAndTShares(int numOfRandomPairs, vecto
         cout << "T" << T << endl;
     }
 
-    int fieldByteSize = field->getElementSizeInBytes();
-    for(int i=0; i < N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//    int fieldByteSize = field->getElementSizeInBytes();
+//    for(int i=0; i < N; i++)
+//    {
+//        for(int j=0; j<sendBufsElements[i].size();j++) {
+//            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+//        }
+//    }
 
-    roundFunctionSync(sendBufsBytes, recBufsBytes,4);
+    roundFunctionSync(sendBufsElements, recBufsElements,4);
 
 
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
-
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
-    }
+//    if(flag_print) {
+//        for (int i = 0; i < N; i++) {
+//            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
+//
+//                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
+//            }
+//        }
+//        for (int i = 0; i < N; i++) {
+//            for (int k = 0; k < recBufsBytes[0].size(); k++) {
+//                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
+//            }
+//        }
+//    }
 
     for(int k=0; k < no_buckets; k++) {
         for (int i = 0; i < N; i++) {
-            t1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k * fieldByteSize));
-            t2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k +1) * fieldByteSize));
+//            t1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k * fieldByteSize));
+//            t2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k +1) * fieldByteSize));
+
+
+            t1[i] = recBufsElements[i][2*k];
+            t2[i] = recBufsElements[i][2*k+1];
 
         }
         matrix_vand_transpose.MatrixMult(t1, r1,N-T);
@@ -1908,7 +1918,7 @@ bool Protocol<FieldType>::verificationOfSingleTriples(FieldType *x, FieldType *y
 
 
 template <class FieldType>
-void Protocol<FieldType>::roundFunctionSync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round) {
+void Protocol<FieldType>::roundFunctionSync(vector<vector<FieldType>> &sendBufs, vector<vector<FieldType>> &recBufs, int round) {
 
     //cout<<"in roundFunctionSync "<< round<< endl;
 
@@ -1942,7 +1952,7 @@ void Protocol<FieldType>::roundFunctionSync(vector<vector<byte>> &sendBufs, vect
 
 
 template <class FieldType>
-void Protocol<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int first, int last){
+void Protocol<FieldType>::exchangeData(vector<vector<FieldType>> &sendBufs, vector<vector<FieldType>> &recBufs, int first, int last){
 
 
     //cout<<"in exchangeData";
@@ -1953,15 +1963,15 @@ void Protocol<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<ve
 
             if (sendBufs[parties[i]->getID()].size() > 0) {
                 //send shares to my input bits
-                parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(),
-                                                sendBufs[parties[i]->getID()].size());
+                parties[i]->getChannel()->write((byte*)sendBufs[parties[i]->getID()].data(),
+                                                sendBufs[parties[i]->getID()].size()*field->getElementSizeInBytes());
                 //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
             }
 
             if (recBufs[parties[i]->getID()].size() > 0) {
                 //receive shares from the other party and set them in the shares array
-                parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(),
-                                               recBufs[parties[i]->getID()].size());
+                parties[i]->getChannel()->read((byte *)recBufs[parties[i]->getID()].data(),
+                                               recBufs[parties[i]->getID()].size()*field->getElementSizeInBytes());
                 //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
             }
 
@@ -1969,16 +1979,16 @@ void Protocol<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<ve
 
             if (recBufs[parties[i]->getID()].size() > 0) {
                 //receive shares from the other party and set them in the shares array
-                parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(),
-                                               recBufs[parties[i]->getID()].size());
+                parties[i]->getChannel()->read((byte*)recBufs[parties[i]->getID()].data(),
+                                               recBufs[parties[i]->getID()].size()*field->getElementSizeInBytes());
                 //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
             }
 
             if (sendBufs[parties[i]->getID()].size() > 0) {
 
                 //send shares to my input bits
-                parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(),
-                                                sendBufs[parties[i]->getID()].size());
+                parties[i]->getChannel()->write((byte *)sendBufs[parties[i]->getID()].data(),
+                                                sendBufs[parties[i]->getID()].size()*field->getElementSizeInBytes());
                 //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
             }
 
