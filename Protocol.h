@@ -1743,8 +1743,12 @@ bool Protocol<FieldType>::verifyMults(int numOfpairs, vector<FieldType> &xShares
 
       bool flag;
 
-      vector<vector<byte>> sendBufsBytes(N);
-      vector<vector<byte>> recBufsBytes(N);
+//      vector<vector<byte>> sendBufsBytes(N);
+//      vector<vector<byte>> recBufsBytes(N);
+
+      vector<vector<FieldType>> sendBufsElements(N);
+      vector<vector<FieldType>> recBufsElements(N);
+
 
       vector<FieldType> x1(N);
       int fieldByteSize = field->getElementSizeInBytes();
@@ -1754,23 +1758,28 @@ bool Protocol<FieldType>::verifyMults(int numOfpairs, vector<FieldType> &xShares
       //resize vectors
       for(int i=0; i < N; i++)
       {
-          sendBufsBytes[i].resize(numOfRandomShares*fieldByteSize);
-          recBufsBytes[i].resize(numOfRandomShares*fieldByteSize);
+//          sendBufsBytes[i].resize(numOfRandomShares*fieldByteSize);
+//          recBufsBytes[i].resize(numOfRandomShares*fieldByteSize);
+
+          sendBufsElements[i].resize(numOfRandomShares);
+          recBufsElements[i].resize(numOfRandomShares);
+
       }
 
       //set the first sending data buffer
       for(int j=0; j<numOfRandomShares;j++) {
-          field->elementToBytes(sendBufsBytes[0].data() + (j * fieldByteSize), Shares[j]);
+          //field->elementToBytes(sendBufsBytes[0].data() + (j * fieldByteSize), Shares[j]);
+          sendBufsElements[0][j] = Shares[j];
       }
 
       //copy the same data for all parties
       for(int i=1; i<N; i++){
 
-          sendBufsBytes[i] = sendBufsBytes[0];
+          sendBufsElements[i] = sendBufsElements[0];
       }
 
       //call the round function to send the shares to all the users and get the other parties share
-      roundFunctionSync(sendBufsBytes, recBufsBytes,12);
+      roundFunctionSync(sendBufsElements, recBufsElements,12);
 
       //reconstruct each set of shares to get the secret
 
@@ -1779,7 +1788,8 @@ bool Protocol<FieldType>::verifyMults(int numOfpairs, vector<FieldType> &xShares
           //get the set of shares for each element
           for(int i=0; i < N; i++) {
 
-              x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldByteSize));
+              //x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldByteSize));
+              x1[i] = recBufsElements[i][k];
           }
 
           secrets[k] = reconstructShare(x1, T, flag);
