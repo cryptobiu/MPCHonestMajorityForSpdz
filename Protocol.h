@@ -1530,8 +1530,9 @@ void Protocol<FieldType>::GRRHonestMultiplication(FieldType *a, FieldType *b, ve
     vector<FieldType> x1(N),y1(N);
 
     vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
-    vector<vector<byte>> recBufsBytes(N);
+    //vector<vector<byte>> sendBufsBytes(N);
+    //vector<vector<byte>> recBufsBytes(N);
+    vector<vector<FieldType>> recBufsElements(N);
 
     FieldType d;
 
@@ -1541,8 +1542,10 @@ void Protocol<FieldType>::GRRHonestMultiplication(FieldType *a, FieldType *b, ve
     for(int i=0; i < N; i++)
     {
         sendBufsElements[i].resize(numOfTrupples);
-        sendBufsBytes[i].resize((numOfTrupples)*field->getElementSizeInBytes());
-        recBufsBytes[i].resize((numOfTrupples)*field->getElementSizeInBytes());
+        //sendBufsBytes[i].resize((numOfTrupples)*field->getElementSizeInBytes());
+        //recBufsBytes[i].resize((numOfTrupples)*field->getElementSizeInBytes());
+        recBufsElements[i].resize(numOfTrupples);
+
     }
 
 
@@ -1572,15 +1575,15 @@ void Protocol<FieldType>::GRRHonestMultiplication(FieldType *a, FieldType *b, ve
     }
 
     //convert to bytes
-    int fieldByteSize = field->getElementSizeInBytes();
-    for(int i=0; i < N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//    int fieldByteSize = field->getElementSizeInBytes();
+//    for(int i=0; i < N; i++)
+//    {
+//        for(int j=0; j<sendBufsElements[i].size();j++) {
+//            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+//        }
+//    }
 
-    roundFunctionSync(sendBufsBytes, recBufsBytes,4);
+    roundFunctionSync(sendBufsElements, recBufsElements,4);
 
     int fieldBytesSize = field->getElementSizeInBytes();
 
@@ -1588,7 +1591,8 @@ void Protocol<FieldType>::GRRHonestMultiplication(FieldType *a, FieldType *b, ve
 
        // generate random degree-T polynomial
         for (int i = 0; i < N; i++) {
-            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k * fieldBytesSize));
+            //x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k * fieldBytesSize));
+            x1[i] = recBufsElements[i][k];
         }
 
         FieldType accum = *field->GetZero();

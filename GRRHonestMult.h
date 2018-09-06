@@ -32,8 +32,9 @@ void GRRHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType
     vector<FieldType> x1(protocol->N),y1(protocol->N);
 
     vector<vector<FieldType>> sendBufsElements(protocol->N);
-    vector<vector<byte>> sendBufsBytes(protocol->N);
-    vector<vector<byte>> recBufsBytes(protocol->N);
+    //vector<vector<byte>> sendBufsBytes(protocol->N);
+    //vector<vector<byte>> recBufsBytes(protocol->N);
+    vector<vector<FieldType>> recBufselements(protocol->N);
 
     FieldType d;
 
@@ -43,8 +44,9 @@ void GRRHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType
     for(int i=0; i < protocol->N; i++)
     {
         sendBufsElements[i].resize(numOfTrupples);
-        sendBufsBytes[i].resize((numOfTrupples)*protocol->field->getElementSizeInBytes());
-        recBufsBytes[i].resize((numOfTrupples)*protocol->field->getElementSizeInBytes());
+        //sendBufsBytes[i].resize((numOfTrupples)*protocol->field->getElementSizeInBytes());
+        //recBufsBytes[i].resize((numOfTrupples)*protocol->field->getElementSizeInBytes());
+        recBufselements[i].resize(numOfTrupples);
     }
 
 
@@ -74,15 +76,15 @@ void GRRHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType
     }
 
     //convert to bytes
-    int fieldByteSize = protocol->field->getElementSizeInBytes();
-    for(int i=0; i < protocol->N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            protocol->field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//    int fieldByteSize = protocol->field->getElementSizeInBytes();
+//    for(int i=0; i < protocol->N; i++)
+//    {
+//        for(int j=0; j<sendBufsElements[i].size();j++) {
+//            protocol->field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+//        }
+//    }
 
-    protocol->roundFunctionSync(sendBufsBytes, recBufsBytes,4);
+    protocol->roundFunctionSync(sendBufsElements, recBufselements,4);
 
     int fieldBytesSize = protocol->field->getElementSizeInBytes();
 
@@ -90,7 +92,8 @@ void GRRHonestMult<FieldType>::mult(FieldType *a, FieldType *b, vector<FieldType
 
         // generate random degree-T polynomial
         for (int i = 0; i < protocol->N; i++) {
-            x1[i] = protocol->field->bytesToElement(recBufsBytes[i].data() + (k * fieldBytesSize));
+            //x1[i] = protocol->field->bytesToElement(recBufsBytes[i].data() + (k * fieldBytesSize));
+            x1[i] = sendBufsElements[i][k];
         }
 
         FieldType accum = *protocol->field->GetZero();
