@@ -198,6 +198,16 @@ public:
         mpz_import(value, 1, -1, 16, 0, 0, (void*)&p);
         return;
     }
+
+    operator mp_limb_t*()
+    {
+        return (mp_limb_t*)&elem;
+    }
+
+    static const mp_limb_t * get_mp_limb_t_p()
+	{
+		return (const mp_limb_t *)&p;
+	}
 };
 
 inline std::ostream& operator<<(std::ostream& s, const ZpMersenne127Element & a){
