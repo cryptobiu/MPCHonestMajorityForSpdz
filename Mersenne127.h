@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory.h>
 #include <x86intrin.h>
 #include <gmp.h>
 #include <iostream>
@@ -193,15 +194,22 @@ public:
         return;
     }
 
+    void get_mp_limb_t(mp_limb_t value[2]) const
+    {
+    	memcpy(value, &elem, 2 * sizeof(mp_limb_t));
+        return;
+    }
+
+    void set_mp_limb_t(const mp_limb_t value[2])
+    {
+    	memcpy(&elem, value, 2 * sizeof(mp_limb_t));
+        return;
+    }
+
     static void get_mpz_t_p(mpz_t value)
     {
         mpz_import(value, 1, -1, 16, 0, 0, (void*)&p);
         return;
-    }
-
-    operator mp_limb_t*()
-    {
-        return (mp_limb_t*)&elem;
     }
 
     static const mp_limb_t * get_mp_limb_t_p()
